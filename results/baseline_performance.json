@@ -1,0 +1,31 @@
+{
+  "model": "Qwen/Qwen2.5-1.5B-Instruct",
+  "device": "mps",
+  "results": [
+    {
+      "prompt": "The future of artificial intelligence is",
+      "tokens_generated": 100,
+      "time_taken": 9.85332202911377,
+      "throughput": 10.148861440286675
+    },
+    {
+      "prompt": "Once upon a time in a distant galaxy",
+      "tokens_generated": 100,
+      "time_taken": 7.88702392578125,
+      "throughput": 12.679053714179584
+    },
+    {
+      "prompt": "def fibonacci(n):",
+      "tokens_generated": 100,
+      "time_taken": 7.252313137054443,
+      "throughput": 13.788704115527947
+    },
+    {
+      "prompt": "The economic implications of climate change include",
+      "tokens_generated": 100,
+      "time_taken": 7.98906397819519,
+      "throughput": 12.517110924750787
+    }
+  ],
+  "average_throughput": 12.283432548686248
+}

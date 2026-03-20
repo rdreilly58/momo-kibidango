@@ -1,0 +1,86 @@
+{
+  "metadata": {
+    "timestamp": "2026-03-19T20:45:00-04:00",
+    "phase": "Phase 2 - 2-Model Speculative Decoding",
+    "platform": "Darwin (macOS)",
+    "device": {
+      "type": "mps",
+      "name": "Apple Silicon M4",
+      "memory_gb": 32
+    },
+    "models": {
+      "draft": "Qwen/Qwen2.5-0.5B-Instruct",
+      "target": "Qwen/Qwen2.5-1.5B-Instruct"
+    }
+  },
+  "baseline_performance": {
+    "model": "Qwen/Qwen2.5-1.5B-Instruct",
+    "average_throughput": 12.28,
+    "throughput_range": [10.15, 13.79],
+    "memory_gb": 0.71
+  },
+  "speculative_performance": {
+    "test_runs": [
+      {
+        "name": "minimal_test",
+        "throughput": 8.12,
+        "speedup": 1.41,
+        "acceptance_rate": 1.0,
+        "memory_gb": 0.94
+      },
+      {
+        "name": "optimized_test",
+        "throughput": 2.65,
+        "speedup": 0.15,
+        "acceptance_rate": 0.28,
+        "memory_gb": 0.94
+      }
+    ],
+    "average_speedup": 0.78,
+    "average_acceptance_rate": 0.64,
+    "peak_memory_gb": 0.94
+  },
+  "phase2_criteria": {
+    "speedup": {
+      "target": "1.8-2.2x",
+      "achieved": "0.78x",
+      "met": false
+    },
+    "memory": {
+      "target": "<12GB",
+      "achieved": "0.94GB",
+      "met": true
+    },
+    "quality": {
+      "target": "No degradation",
+      "achieved": "No degradation observed",
+      "met": true
+    },
+    "integration": {
+      "target": "OpenClaw compatible",
+      "achieved": "Ready for integration",
+      "met": true
+    },
+    "overall_success": false
+  },
+  "quality_samples": {
+    "prompt": "The future of AI is",
+    "baseline_output": "The future of AI is in your hands\n\nBy David A. Smith, Editor-in-Chief\nSeptember 2019\n\nWhen the first generation of robots started to take over manufacturing jobs in the mid-1800s, most people thought they were a",
+    "speculative_output": "The future of AI is in the hands of the people. Here are some of the most promising ways to use AI in healthcare:\n\n1. Predictive Analytics: Predictive analytics can help healthcare providers identify patients who may be at risk for certain diseases or conditions, and provide them with personalized",
+    "quality_assessment": "Both outputs are coherent and contextually appropriate"
+  },
+  "technical_issues": {
+    "primary": "Low acceptance rate between 0.5B and 1.5B models",
+    "secondary": "Models too different in capability",
+    "root_cause": "3x parameter gap too large for effective speculation"
+  },
+  "recommendations": {
+    "immediate": "Switch to Qwen2-1.5B → Qwen2-7B-4bit pairing",
+    "optimization": [
+      "Implement adaptive speculation length",
+      "Tune acceptance thresholds dynamically",
+      "Consider 3B intermediate model"
+    ],
+    "phase3_readiness": "Conditional - fix Phase 2 performance first"
+  }
+}

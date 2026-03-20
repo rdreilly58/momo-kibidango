@@ -1,0 +1,19 @@
+{
+  "baseline": {
+    "generated_text": "The key advantages of renewable energy include:\n\n1. **Low Operational Costs**: Renewable energy sources, such as solar and wind power, require minimal or no fuel to operate once they are installed.\n\n2. **Abundance of Natural Resources**: Many countries have abundant natural resources for generating electricity from renewables like hydroelectricity (water), geothermal heat, biomass (from organic waste), and tidal power.\n\n3. **Environmental Benefits**: Solar panels do not produce greenhouse gases during operation, while other forms of renewable energy generally cause less air pollution than",
+    "tokens_generated": 100,
+    "time_taken": 5.637756824493408,
+    "throughput": 17.73755114189156
+  },
+  "speculative": {
+    "generated_text": "The key advantages of renewable energy include:\n. low pollution\n low cost\n reliability\n of supply\niveness\n:\n\n1. pollution\n. low cost. This is a answer on the advantages of energy. Therefore, answer B is.\n\n2 reliability. This a answer the advantages of. energy Therefore, D is3. supply. is a on the of energy advantages. Therefore C is answer. of advantages of. energy1.\n. low. pollution . This is answer on of the. advantages. of energy., therefore A.",
+    "tokens_generated": 101,
+    "time_taken": 38.07607817649841,
+    "throughput": 2.6525841115207065,
+    "acceptance_rate": 0.28055555555555556,
+    "n_iterations": 60,
+    "n_drafted": 360,
+    "n_accepted": 101
+  },
+  "speedup": 0.14954624177268647
+}

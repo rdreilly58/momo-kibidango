@@ -1,0 +1,22 @@
+{
+  "timestamp": "2026-03-19 20:32:56",
+  "prompt": "The future of AI is",
+  "baseline": {
+    "generated_text": "The future of AI is in your hands\n\nBy David A. Smith, Editor-in-Chief\nSeptember 2019\n\nWhen the first generation of robots started to take over manufacturing jobs in the mid-1800s, most people thought they were a",
+    "tokens_generated": 50,
+    "time_taken": 8.669984817504883,
+    "throughput": 5.7670227863662396,
+    "memory_gb": 0.71335936
+  },
+  "speculative": {
+    "generated_text": "The future of AI is in the hands of the people. Here are some of the most promising ways to use AI in healthcare:\n\n1. Predictive Analytics: Predictive analytics can help healthcare providers identify patients who may be at risk for certain diseases or conditions, and provide them with personalized",
+    "tokens_generated": 52,
+    "time_taken": 6.402278900146484,
+    "throughput": 8.122107894863849,
+    "memory_gb": 0.936247296,
+    "acceptance_rate": 1.0,
+    "total_accepted": 52,
+    "total_drafted": 52
+  },
+  "speedup": 1.408371042692122
+}
