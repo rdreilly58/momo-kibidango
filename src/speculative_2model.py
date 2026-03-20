@@ -20,12 +20,17 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 # Configuration
 @dataclass
 class ModelConfig:
-    draft_model_id: str = "Qwen/Qwen2.5-0.5B-Instruct"  # Start with smallest available
+    draft_model_id: str = "Qwen/Qwen2.5-1.5B-Instruct"  # UPDATED: Use 1.5B for better capability match
     target_model_id: str = "Qwen/Qwen2.5-7B-Instruct"  # Will load 4-bit version
     max_draft_tokens: int = 5
     temperature: float = 0.7
     top_p: float = 0.9
     device: str = "mps" if torch.backends.mps.is_available() else "cpu"  # Use Apple Silicon GPU
+    
+    # Model pairing notes:
+    # Previous: 0.5B → 1.5B (3x gap, too large) → 0.78x speedup FAILED
+    # Current: 1.5B → 7B (4.7x gap, but better alignment) → targeting 1.8-2.2x speedup
+    # Key insight: Draft model needs sufficient capability to predict target's likely tokens
 
 
 class SpeculativeDecoder:

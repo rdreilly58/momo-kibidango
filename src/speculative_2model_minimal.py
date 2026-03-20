@@ -22,9 +22,14 @@ class MinimalSpeculativeDecoder:
     """Simplified two-model speculative decoding"""
     
     def __init__(self, draft_model_path: Optional[str] = None, target_model_path: Optional[str] = None):
-        # Default to Qwen2.5 models
-        self.draft_model_id = draft_model_path or "Qwen/Qwen2.5-0.5B-Instruct"
-        self.target_model_id = target_model_path or "Qwen/Qwen2.5-1.5B-Instruct"  # Use smaller target for testing
+        # Default to Qwen2.5 models - OPTIMIZED PAIRING FOR PHASE 2
+        self.draft_model_id = draft_model_path or "Qwen/Qwen2.5-1.5B-Instruct"  # UPDATED: 1.5B draft for better match
+        self.target_model_id = target_model_path or "Qwen/Qwen2.5-7B-Instruct"  # FIXED: Use 7B target as intended
+        
+        # Note: Expected memory usage with fp16:
+        # - Draft (1.5B): ~3GB
+        # - Target (7B): ~14GB  
+        # - Total: ~17GB (may exceed 12GB target without quantization)
         
         # Detect device
         if torch.cuda.is_available():

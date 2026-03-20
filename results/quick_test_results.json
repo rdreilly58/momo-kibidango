@@ -1,0 +1,31 @@
+{
+  "test_config": "0.5B \u2192 1.5B (verification test)",
+  "results": [
+    {
+      "prompt": "The capital of France is",
+      "baseline_throughput": 9.95416763179179,
+      "speculative_throughput": 9.752662990015667,
+      "acceptance_rate": 0.6590909090909091,
+      "speedup": 0.9797567562422241
+    },
+    {
+      "prompt": "Machine learning algorithms can",
+      "baseline_throughput": 18.336139949603314,
+      "speculative_throughput": 13.914851307555088,
+      "acceptance_rate": 0.9375,
+      "speedup": 0.7588757146160483
+    },
+    {
+      "prompt": "To solve climate change, we need to",
+      "baseline_throughput": 19.568756519141296,
+      "speculative_throughput": 16.297616267525758,
+      "acceptance_rate": 0.8055555555555556,
+      "speedup": 0.8328386247528885
+    }
+  ],
+  "summary": {
+    "avg_speedup": 0.857157031870387,
+    "avg_acceptance_rate": 0.8007154882154882,
+    "memory_gb": 1.0592256
+  }
+}

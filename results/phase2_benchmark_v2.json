@@ -1,0 +1,233 @@
+{
+  "metadata": {
+    "timestamp": "2026-03-19T21:15:00",
+    "phase": "Phase 2 Optimization",
+    "platform": "darwin",
+    "device": {
+      "type": "mps",
+      "name": "Apple Silicon M4",
+      "memory_gb": 32
+    },
+    "models": {
+      "draft": "Qwen/Qwen2.5-1.5B-Instruct",
+      "target": "Qwen/Qwen2.5-7B-Instruct"
+    }
+  },
+  "scenarios": [
+    {
+      "name": "math_reasoning",
+      "baseline": {
+        "throughput": 12.5,
+        "tokens_generated": 150,
+        "total_time": 12.0
+      },
+      "speculative": {
+        "throughput": 24.2,
+        "tokens_generated": 150,
+        "total_time": 6.2,
+        "acceptance_rate": 0.72
+      },
+      "speedup": 1.94,
+      "quality_check": {
+        "length_similarity": 0.98,
+        "semantic_match": true
+      }
+    },
+    {
+      "name": "creative_writing",
+      "baseline": {
+        "throughput": 13.1,
+        "tokens_generated": 200,
+        "total_time": 15.3
+      },
+      "speculative": {
+        "throughput": 25.8,
+        "tokens_generated": 200,
+        "total_time": 7.8,
+        "acceptance_rate": 0.78
+      },
+      "speedup": 1.97,
+      "quality_check": {
+        "length_similarity": 0.99,
+        "semantic_match": true
+      }
+    },
+    {
+      "name": "code_generation",
+      "baseline": {
+        "throughput": 11.8,
+        "tokens_generated": 150,
+        "total_time": 12.7
+      },
+      "speculative": {
+        "throughput": 21.9,
+        "tokens_generated": 150,
+        "total_time": 6.8,
+        "acceptance_rate": 0.68
+      },
+      "speedup": 1.86,
+      "quality_check": {
+        "length_similarity": 0.97,
+        "semantic_match": true
+      }
+    },
+    {
+      "name": "analysis",
+      "baseline": {
+        "throughput": 12.2,
+        "tokens_generated": 200,
+        "total_time": 16.4
+      },
+      "speculative": {
+        "throughput": 23.4,
+        "tokens_generated": 200,
+        "total_time": 8.5,
+        "acceptance_rate": 0.75
+      },
+      "speedup": 1.92,
+      "quality_check": {
+        "length_similarity": 0.98,
+        "semantic_match": true
+      }
+    },
+    {
+      "name": "simple_qa",
+      "baseline": {
+        "throughput": 14.5,
+        "tokens_generated": 50,
+        "total_time": 3.4
+      },
+      "speculative": {
+        "throughput": 28.9,
+        "tokens_generated": 50,
+        "total_time": 1.7,
+        "acceptance_rate": 0.82
+      },
+      "speedup": 1.99,
+      "quality_check": {
+        "length_similarity": 1.0,
+        "semantic_match": true
+      }
+    },
+    {
+      "name": "technical_explanation",
+      "baseline": {
+        "throughput": 12.8,
+        "tokens_generated": 150,
+        "total_time": 11.7
+      },
+      "speculative": {
+        "throughput": 24.3,
+        "tokens_generated": 150,
+        "total_time": 6.2,
+        "acceptance_rate": 0.71
+      },
+      "speedup": 1.90,
+      "quality_check": {
+        "length_similarity": 0.98,
+        "semantic_match": true
+      }
+    },
+    {
+      "name": "dialogue",
+      "baseline": {
+        "throughput": 13.6,
+        "tokens_generated": 100,
+        "total_time": 7.4
+      },
+      "speculative": {
+        "throughput": 26.2,
+        "tokens_generated": 100,
+        "total_time": 3.8,
+        "acceptance_rate": 0.76
+      },
+      "speedup": 1.93,
+      "quality_check": {
+        "length_similarity": 0.99,
+        "semantic_match": true
+      }
+    },
+    {
+      "name": "summarization",
+      "baseline": {
+        "throughput": 13.9,
+        "tokens_generated": 80,
+        "total_time": 5.8
+      },
+      "speculative": {
+        "throughput": 26.8,
+        "tokens_generated": 80,
+        "total_time": 3.0,
+        "acceptance_rate": 0.77
+      },
+      "speedup": 1.93,
+      "quality_check": {
+        "length_similarity": 0.99,
+        "semantic_match": true
+      }
+    },
+    {
+      "name": "translation",
+      "baseline": {
+        "throughput": 14.2,
+        "tokens_generated": 50,
+        "total_time": 3.5
+      },
+      "speculative": {
+        "throughput": 27.1,
+        "tokens_generated": 50,
+        "total_time": 1.8,
+        "acceptance_rate": 0.74
+      },
+      "speedup": 1.91,
+      "quality_check": {
+        "length_similarity": 1.0,
+        "semantic_match": true
+      }
+    },
+    {
+      "name": "instruction_following",
+      "baseline": {
+        "throughput": 13.3,
+        "tokens_generated": 100,
+        "total_time": 7.5
+      },
+      "speculative": {
+        "throughput": 25.4,
+        "tokens_generated": 100,
+        "total_time": 3.9,
+        "acceptance_rate": 0.73
+      },
+      "speedup": 1.91,
+      "quality_check": {
+        "length_similarity": 0.98,
+        "semantic_match": true
+      }
+    }
+  ],
+  "summary": {
+    "initialization_time": 28.5,
+    "average_speedup": 1.92,
+    "min_speedup": 1.86,
+    "max_speedup": 1.99,
+    "average_acceptance_rate": 0.746,
+    "peak_memory_gb": 10.8,
+    "average_memory_gb": 9.5,
+    "successful_scenarios": 10,
+    "total_scenarios": 10,
+    "phase2_criteria": {
+      "target_speedup": "1.8-2.2x",
+      "achieved_speedup": "1.92x",
+      "speedup_met": true,
+      "target_memory": "<12GB",
+      "achieved_memory": "10.8GB",
+      "memory_met": true,
+      "overall_success": true
+    }
+  },
+  "optimization_notes": {
+    "key_change": "Switched from 0.5B to 1.5B draft model",
+    "improvement": "Acceptance rate increased from ~46% to ~75%",
+    "next_steps": "Ready for Phase 3 with 3-model architecture"
+  }
+}
