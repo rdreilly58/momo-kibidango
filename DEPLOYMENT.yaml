@@ -1,0 +1,213 @@
+# Example Kubernetes Deployment for Speculative Decoding
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: speculative-decoding
+  labels:
+    app: speculative-decoding
+    version: v1.0.0
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: speculative-decoding
+  template:
+    metadata:
+      labels:
+        app: speculative-decoding
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: speculative-decoding
+        image: speculative-decoding:v1.0.0
+        ports:
+        - containerPort: 5000
+          name: api
+        - containerPort: 8080
+          name: metrics
+        env:
+        - name: SPECULATIVE_DEFAULT_MODE
+          value: "2model"
+        - name: SPECULATIVE_ENABLE_3MODEL
+          value: "true"
+        - name: SPECULATIVE_MONITORING_PORT
+          value: "8080"
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        resources:
+          requests:
+            memory: "16Gi"
+            cpu: "8"
+            nvidia.com/gpu: "1"
+          limits:
+            memory: "32Gi"
+            cpu: "16"
+            nvidia.com/gpu: "1"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 120
+          periodSeconds: 30
+          timeoutSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 5000
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 5
+        volumeMounts:
+        - name: models-cache
+          mountPath: /models
+        - name: config
+          mountPath: /config
+          readOnly: true
+      volumes:
+      - name: models-cache
+        persistentVolumeClaim:
+          claimName: models-pvc
+      - name: config
+        configMap:
+          name: speculative-decoding-config
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: speculative-decoding
+spec:
+  selector:
+    app: speculative-decoding
+  ports:
+  - name: api
+    port: 80
+    targetPort: 5000
+  - name: metrics
+    port: 8080
+    targetPort: 8080
+  type: LoadBalancer
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: speculative-decoding-config
+data:
+  config.json: |
+    {
+      "default_mode": "2model",
+      "enable_3model": true,
+      "enable_2model": true,
+      "enable_fallback": true,
+      "max_batch_size": 8,
+      "request_timeout": 300,
+      "enable_monitoring": true,
+      "rate_limit_per_minute": 60,
+      "max_memory_gb": 28.0,
+      "warn_memory_gb": 24.0,
+      "critical_memory_gb": 26.0,
+      "feature_flags": {
+        "enable_batch_inference": true,
+        "enable_kv_cache_sharing": true,
+        "log_performance_metrics": true,
+        "validate_inputs": true
+      }
+    }
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: models-pvc
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Gi
+  storageClassName: fast-ssd
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: speculative-decoding-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: speculative-decoding
+  minReplicas: 2
+  maxReplicas: 8
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  - type: Pods
+    pods:
+      metric:
+        name: speculative_decoding_inference_rate
+      target:
+        type: AverageValue
+        averageValue: "100"
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: speculative-decoding-pdb
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: speculative-decoding
+
+---
+# Docker Compose alternative for development/testing
+# Save as docker-compose.yml
+
+# version: '3.8'
+# 
+# services:
+#   speculative-decoding:
+#     build: .
+#     image: speculative-decoding:v1.0.0
+#     ports:
+#       - "5000:5000"
+#       - "8080:8080"
+#     environment:
+#       - SPECULATIVE_DEFAULT_MODE=2model
+#       - SPECULATIVE_ENABLE_3MODEL=true
+#       - PYTHONUNBUFFERED=1
+#     volumes:
+#       - ./models:/models
+#       - ./config:/config
+#     deploy:
+#       resources:
+#         limits:
+#           memory: 32G
+#         reservations:
+#           memory: 16G
+#           devices:
+#             - driver: nvidia
+#               count: 1
+#               capabilities: [gpu]
+#     healthcheck:
+#       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+#       interval: 30s
+#       timeout: 10s
+#       retries: 3
+#       start_period: 120s

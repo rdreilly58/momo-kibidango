@@ -1,18 +1,25 @@
 # momo-kibidango
 
-Fast speculative decoding implementation with 2-model and 3-model pyramid architectures for accelerated LLM inference.
+Production-ready speculative decoding implementation achieving 1.9-2.1x speedup in LLM inference while maintaining output quality.
+
+## 🚀 v1.0.0 - Production Ready
+
+This release includes comprehensive production hardening, monitoring, error handling, and full OpenClaw integration.
 
 ## Overview
 
-This project implements speculative decoding techniques to achieve 1.9-2.1x speedup in large language model inference while maintaining output quality. Based on research from Google's PyramidSD paper.
+This project implements speculative decoding techniques to accelerate large language model inference using hierarchical multi-model architectures. Based on research from Google's PyramidSD paper, enhanced with production-grade features.
 
 ## Features
 
 - **2-Model Speculative Decoding**: Draft model + target model (1.92x speedup)
-- **3-Model Pyramid Architecture**: Draft + qualifier + target models (1.97x speedup)
-- **Automatic Fallback**: Graceful degradation on memory constraints
-- **OpenClaw Integration**: REST API for easy deployment
-- **Comprehensive Benchmarking**: 15 scenarios across different task types
+- **3-Model Pyramid Architecture**: Draft + qualifier + target models (1.97x speedup)  
+- **Automatic Fallback**: Graceful degradation on memory constraints (3→2→1 model)
+- **Production Hardening**: Error handling, rate limiting, input validation
+- **Comprehensive Monitoring**: Prometheus metrics, health checks, alerting
+- **OpenClaw Native**: CLI tool, REST API, batch processing
+- **Performance Optimization**: Token batching, KV-cache sharing, model caching
+- **Security**: Input sanitization, API authentication, resource limits
 
 ## Performance
 
@@ -95,31 +102,47 @@ python scripts/benchmark_3model.py
 python scripts/benchmark_3model.py --scenarios 5
 ```
 
+## Production Deployment
+
+See [PRODUCTION_DEPLOYMENT.md](docs/PRODUCTION_DEPLOYMENT.md) for comprehensive deployment guide.
+
+### Quick Production Setup
+
+```bash
+# Install with production dependencies
+pip install -r requirements.txt
+pip install prometheus-client psutil
+
+# Initialize models
+python -m src.openclaw_native --initialize
+
+# Start with monitoring
+python -m src.openclaw_integration_v2
+
+# Check health
+curl http://localhost:5000/health
+```
+
 ## API Reference
 
-### POST /infer
-Generate text using speculative decoding.
+See [OPENCLAW_INTEGRATION.md](docs/OPENCLAW_INTEGRATION.md) for full API documentation.
 
-```json
-{
-  "prompt": "Your prompt here",
-  "max_length": 100
-}
-```
+### Key Endpoints
 
-### GET /config
-Get or update configuration.
+- `POST /infer` - Generate text
+- `POST /batch` - Batch generation  
+- `GET /status` - System status
+- `GET /metrics` - Prometheus metrics
+- `GET /health` - Health check
 
-```json
-{
-  "use_3model": false,
-  "auto_fallback": true,
-  "max_memory_gb": 12.0
-}
-```
+## Monitoring
 
-### GET /metrics
-View inference performance metrics.
+Access metrics at `http://localhost:8080/metrics`:
+
+- Throughput: `speculative_decoding_throughput_tokens_per_second`
+- Latency: `speculative_decoding_latency_seconds` 
+- Memory: `speculative_decoding_memory_usage_gb`
+- Acceptance rates: `speculative_decoding_acceptance_rate`
 
 ## Development
 
@@ -127,16 +150,36 @@ View inference performance metrics.
 ```
 momo-kibidango/
 ├── src/
-│   ├── speculative_2model.py    # 2-model implementation
-│   ├── speculative_3model.py    # 3-model pyramid
-│   └── openclaw_integration.py  # API server
-├── scripts/
-│   ├── benchmark_3model.py      # Benchmark suite
-│   └── openclaw_client.py       # CLI client
+│   ├── production_hardening.py      # Error handling, monitoring
+│   ├── monitoring.py                # Metrics collection
+│   ├── performance_optimization.py  # Batching, caching
+│   ├── openclaw_native.py          # CLI interface
+│   ├── openclaw_integration_v2.py  # REST API
+│   ├── speculative_3model_production.py  # Production decoder
+│   └── [legacy implementations]
+├── tests/
+│   ├── test_production.py          # Unit tests
+│   ├── test_performance.py         # Performance tests
+│   └── run_tests.py               # Test runner with coverage
 ├── docs/
-│   ├── PHASE2_RESULTS.md        # 2-model results
-│   └── PHASE3_RESULTS.md        # 3-model results
-└── results/                      # Benchmark outputs
+│   ├── PRODUCTION_DEPLOYMENT.md    # Deployment guide
+│   ├── OPENCLAW_INTEGRATION.md     # Integration guide
+│   └── PHASE*_RESULTS.md          # Research results
+└── ~/.openclaw/workspace/skills/
+    └── speculative-decoding/       # OpenClaw skill location
+```
+
+### Testing
+
+```bash
+# Run all tests
+python tests/run_tests.py
+
+# With coverage report
+python tests/run_tests.py --coverage --html
+
+# Specific test suite
+python tests/run_tests.py --test test_production.TestResourceMonitor
 ```
 
 ### Contributing

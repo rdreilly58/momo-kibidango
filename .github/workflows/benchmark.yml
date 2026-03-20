@@ -1,0 +1,125 @@
+name: Benchmark
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      scenarios:
+        description: 'Number of benchmark scenarios'
+        required: false
+        default: '5'
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    # Use larger runner for benchmarks
+    # runs-on: ubuntu-latest-8-cores
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.10"
+    
+    - name: Cache models and dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/pip
+          ~/.cache/huggingface
+          ~/models
+        key: ${{ runner.os }}-benchmark-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-benchmark-
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Download models
+      run: |
+        python scripts/download_models.py
+    
+    - name: Run benchmarks
+      env:
+        SCENARIOS: ${{ github.event.inputs.scenarios || '5' }}
+      run: |
+        # Run baseline benchmark
+        python scripts/establish_baseline.py --iterations 3
+        
+        # Run 2-model benchmark  
+        python scripts/benchmark_2model.py --scenarios $SCENARIOS
+        
+        # Run 3-model benchmark (if memory allows)
+        python scripts/benchmark_3model.py --scenarios $SCENARIOS || echo "3-model benchmark skipped"
+    
+    - name: Generate benchmark report
+      run: |
+        python scripts/generate_benchmark_report.py \
+          --output benchmark_report.md
+    
+    - name: Upload benchmark results
+      uses: actions/upload-artifact@v3
+      with:
+        name: benchmark-results
+        path: |
+          results/*.json
+          benchmark_report.md
+    
+    - name: Comment PR with results
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v6
+      with:
+        github-token: ${{secrets.GITHUB_TOKEN}}
+        script: |
+          const fs = require('fs');
+          const report = fs.readFileSync('benchmark_report.md', 'utf8');
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: `## Benchmark Results\n\n${report}`
+          });
+
+  performance-regression:
+    runs-on: ubuntu-latest
+    needs: benchmark
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Download current results
+      uses: actions/download-artifact@v3
+      with:
+        name: benchmark-results
+        path: current-results
+    
+    - name: Download baseline results
+      uses: dawidd6/action-download-artifact@v2
+      with:
+        workflow: benchmark.yml
+        branch: main
+        name: benchmark-results
+        path: baseline-results
+        if_no_artifact_found: warn
+    
+    - name: Compare results
+      run: |
+        python scripts/compare_benchmarks.py \
+          --baseline baseline-results \
+          --current current-results \
+          --threshold 0.05 \
+          --output regression_report.md
+    
+    - name: Fail if regression detected
+      run: |
+        if grep -q "REGRESSION DETECTED" regression_report.md; then
+          cat regression_report.md
+          exit 1
+        fi
