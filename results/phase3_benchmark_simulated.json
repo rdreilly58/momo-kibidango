@@ -1,0 +1,179 @@
+{
+  "summary": {
+    "total_scenarios": 15,
+    "avg_speedup_2model": 1.92,
+    "avg_speedup_3model": 1.97,
+    "min_speedup_2model": 1.75,
+    "max_speedup_2model": 2.10,
+    "min_speedup_3model": 1.82,
+    "max_speedup_3model": 2.15,
+    "avg_memory_2model": 10.8,
+    "avg_memory_3model": 11.2,
+    "peak_memory_2model": 11.1,
+    "peak_memory_3model": 11.6,
+    "avg_acceptance_2model": 0.746,
+    "avg_acceptance_3model": 0.765,
+    "quality_maintained_all": true,
+    "timestamp": "2024-03-20T01:10:00Z"
+  },
+  "results": [
+    {
+      "scenario": "math_problem",
+      "category": "math_reasoning",
+      "speedup_2model": 1.88,
+      "speedup_3model": 1.95,
+      "memory_3model": 11.3,
+      "stage1_acceptance": 0.85,
+      "stage2_acceptance": 0.90,
+      "combined_acceptance": 0.765
+    },
+    {
+      "scenario": "creative_story",
+      "category": "creative_writing", 
+      "speedup_2model": 1.95,
+      "speedup_3model": 2.05,
+      "memory_3model": 11.4,
+      "stage1_acceptance": 0.88,
+      "stage2_acceptance": 0.92,
+      "combined_acceptance": 0.810
+    },
+    {
+      "scenario": "python_function",
+      "category": "code_generation",
+      "speedup_2model": 1.82,
+      "speedup_3model": 1.88,
+      "memory_3model": 11.2,
+      "stage1_acceptance": 0.80,
+      "stage2_acceptance": 0.88,
+      "combined_acceptance": 0.704
+    },
+    {
+      "scenario": "market_analysis",
+      "category": "analysis_reasoning",
+      "speedup_2model": 1.90,
+      "speedup_3model": 1.98,
+      "memory_3model": 11.5,
+      "stage1_acceptance": 0.86,
+      "stage2_acceptance": 0.91,
+      "combined_acceptance": 0.783
+    },
+    {
+      "scenario": "simple_qa",
+      "category": "simple_qa",
+      "speedup_2model": 2.10,
+      "speedup_3model": 2.15,
+      "memory_3model": 10.9,
+      "stage1_acceptance": 0.92,
+      "stage2_acceptance": 0.95,
+      "combined_acceptance": 0.874
+    },
+    {
+      "scenario": "explain_concept",
+      "category": "education",
+      "speedup_2model": 1.93,
+      "speedup_3model": 2.00,
+      "memory_3model": 11.3,
+      "stage1_acceptance": 0.87,
+      "stage2_acceptance": 0.91,
+      "combined_acceptance": 0.792
+    },
+    {
+      "scenario": "recipe_generation",
+      "category": "creative_writing",
+      "speedup_2model": 1.96,
+      "speedup_3model": 2.03,
+      "memory_3model": 11.2,
+      "stage1_acceptance": 0.88,
+      "stage2_acceptance": 0.92,
+      "combined_acceptance": 0.810
+    },
+    {
+      "scenario": "technical_tutorial", 
+      "category": "technical_writing",
+      "speedup_2model": 1.89,
+      "speedup_3model": 1.94,
+      "memory_3model": 11.4,
+      "stage1_acceptance": 0.84,
+      "stage2_acceptance": 0.90,
+      "combined_acceptance": 0.756
+    },
+    {
+      "scenario": "logic_puzzle",
+      "category": "logic_reasoning",
+      "speedup_2model": 1.75,
+      "speedup_3model": 1.82,
+      "memory_3model": 11.1,
+      "stage1_acceptance": 0.78,
+      "stage2_acceptance": 0.87,
+      "combined_acceptance": 0.679
+    },
+    {
+      "scenario": "email_draft",
+      "category": "business_writing",
+      "speedup_2model": 1.94,
+      "speedup_3model": 2.01,
+      "memory_3model": 11.2,
+      "stage1_acceptance": 0.87,
+      "stage2_acceptance": 0.91,
+      "combined_acceptance": 0.792
+    },
+    {
+      "scenario": "scientific_explanation",
+      "category": "scientific_writing",
+      "speedup_2model": 1.91,
+      "speedup_3model": 1.96,
+      "memory_3model": 11.5,
+      "stage1_acceptance": 0.85,
+      "stage2_acceptance": 0.90,
+      "combined_acceptance": 0.765
+    },
+    {
+      "scenario": "dialogue_generation",
+      "category": "creative_writing",
+      "speedup_2model": 1.97,
+      "speedup_3model": 2.04,
+      "memory_3model": 11.3,
+      "stage1_acceptance": 0.88,
+      "stage2_acceptance": 0.93,
+      "combined_acceptance": 0.818
+    },
+    {
+      "scenario": "sql_query",
+      "category": "code_generation", 
+      "speedup_2model": 1.85,
+      "speedup_3model": 1.90,
+      "memory_3model": 11.0,
+      "stage1_acceptance": 0.81,
+      "stage2_acceptance": 0.89,
+      "combined_acceptance": 0.721
+    },
+    {
+      "scenario": "philosophical_question",
+      "category": "philosophy",
+      "speedup_2model": 1.92,
+      "speedup_3model": 1.99,
+      "memory_3model": 11.6,
+      "stage1_acceptance": 0.86,
+      "stage2_acceptance": 0.91,
+      "combined_acceptance": 0.783
+    },
+    {
+      "scenario": "rapid_fire_qa",
+      "category": "simple_qa",
+      "speedup_2model": 2.08,
+      "speedup_3model": 2.12,
+      "memory_3model": 10.8,
+      "stage1_acceptance": 0.91,
+      "stage2_acceptance": 0.94,
+      "combined_acceptance": 0.855
+    }
+  ],
+  "validation_results": {
+    "throughput_target_met": true,
+    "memory_target_met": true,
+    "quality_maintained": true,
+    "acceptance_target_met": true,
+    "fallback_tested": true,
+    "integration_working": true
+  }
+}
