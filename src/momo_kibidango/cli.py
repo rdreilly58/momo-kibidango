@@ -2,10 +2,11 @@
 """
 Momo-Kibidango CLI Entry Point
 
-Provides command-line interface for running inference, benchmarks, and validation.
+Provides command-line interface for running inference, benchmarks, validation, and MCP server.
 """
 
 import argparse
+import asyncio
 import sys
 from pathlib import Path
 from typing import Optional
@@ -20,6 +21,13 @@ except ImportError:
     ModelConfig = None
     PerformanceMonitor = None
     ProductionHardener = None
+
+try:
+    from .mcp_server import MomoKibidangoMCPServer
+    HAS_MCP = True
+except ImportError:
+    HAS_MCP = False
+    MomoKibidangoMCPServer = None
 
 
 def setup_parser() -> argparse.ArgumentParser:
@@ -101,6 +109,29 @@ Examples:
         help="Verbose validation output",
     )
 
+    # MCP Server
+    serve_parser = subparsers.add_parser(
+        "serve",
+        help="Start MCP (Model Context Protocol) server for agent integration",
+    )
+    serve_parser.add_argument(
+        "--log-level",
+        default="INFO",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+        help="Logging level (default: INFO)",
+    )
+    serve_parser.add_argument(
+        "--host",
+        default="localhost",
+        help="Host to bind to (default: localhost)",
+    )
+    serve_parser.add_argument(
+        "--port",
+        type=int,
+        default=8000,
+        help="Port to bind to (default: 8000)",
+    )
+
     return parser
 
 
@@ -161,6 +192,7 @@ def cmd_validate(args) -> int:
             "Transformers": False,
             "vLLM": False,
             "Pydantic": False,
+            "MCP": False,
         }
         
         try:
@@ -194,6 +226,15 @@ def cmd_validate(args) -> int:
                 print(f"  ✓ Pydantic {pydantic.__version__}")
         except ImportError:
             pass
+
+        try:
+            import mcp
+            checks["MCP"] = True
+            if args.verbose:
+                print(f"  ✓ MCP SDK (available for agent integration)")
+        except ImportError:
+            if args.verbose:
+                print(f"  ℹ MCP SDK (optional, for agent integration)")
         
         # Print summary
         passed = sum(1 for v in checks.values() if v)
@@ -204,13 +245,51 @@ def cmd_validate(args) -> int:
             symbol = "✓" if status else "✗"
             print(f"  {symbol} {name}")
         
-        if passed == total:
+        if passed >= 4:  # Core deps (PyTorch, Transformers, Pydantic, vLLM or core)
             print("\n✅ Installation validated successfully!")
+            print("\nNext steps:")
+            if checks["MCP"]:
+                print("  • Start MCP server: momo-kibidango serve")
+            else:
+                print("  • Install MCP for agent integration: pip install momo-kibidango[mcp]")
             return 0
         else:
             print(f"\n❌ {total - passed} dependency/dependencies missing")
             return 1
         
+    except Exception as e:
+        print(f"❌ Error: {e}", file=sys.stderr)
+        return 1
+
+
+def cmd_serve(args) -> int:
+    """Execute serve command (start MCP server)."""
+    try:
+        if not HAS_MCP:
+            print("❌ MCP SDK not installed", file=sys.stderr)
+            print("Install with: pip install momo-kibidango[mcp]", file=sys.stderr)
+            return 1
+        
+        print(f"🍑 Starting Momo-Kibidango MCP Server...")
+        print(f"  Log level: {args.log_level}")
+        print(f"  Listening in stdio mode (for direct agent integration)")
+        print(f"")
+        print(f"Integration:")
+        print(f"  • Claude SDK: client.add_mcp_server(...)")
+        print(f"  • Tools available: run_inference, benchmark_models")
+        print(f"")
+        
+        # Create and run server
+        server = MomoKibidangoMCPServer(log_level=args.log_level)
+        
+        # Run async server
+        asyncio.run(server.run(host=args.host, port=args.port))
+        
+        return 0
+        
+    except KeyboardInterrupt:
+        print(f"\n🛑 Server stopped", file=sys.stderr)
+        return 0
     except Exception as e:
         print(f"❌ Error: {e}", file=sys.stderr)
         return 1
@@ -233,6 +312,8 @@ def main(argv: Optional[list[str]] = None) -> int:
         return cmd_benchmark(args)
     elif args.command == "validate":
         return cmd_validate(args)
+    elif args.command == "serve":
+        return cmd_serve(args)
     else:
         print(f"Unknown command: {args.command}", file=sys.stderr)
         return 1

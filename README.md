@@ -167,11 +167,58 @@ python scripts/benchmark_3model.py
 python scripts/benchmark_3model.py --scenarios 5
 ```
 
+## 🤖 AI Agent Integration (MCP Protocol)
+
+### Quick Start with Claude
+
+```bash
+# 1. Install MCP support
+pip install momo-kibidango[mcp]
+
+# 2. Start MCP server
+momo-kibidango serve
+
+# 3. Use with Claude (in another terminal)
+python examples/claude_agent_example.py
+```
+
+### Python Integration
+
+```python
+from anthropic import Anthropic
+
+client = Anthropic()
+
+# Register momo-kibidango MCP server
+client.add_mcp_server({
+    "name": "momo-kibidango",
+    "command": "momo-kibidango serve",
+})
+
+# Claude can now use speculative decoding
+response = client.messages.create(
+    model="claude-opus-4-0",
+    max_tokens=1024,
+    tools=[{"type": "mcp", "mcp_name": "momo-kibidango"}],
+    messages=[{
+        "role": "user",
+        "content": "Benchmark speculative decoding performance and recommend if we should use it in production"
+    }],
+)
+```
+
+**Available Tools:**
+- `run_inference` - Execute speculative decoding on a prompt
+- `benchmark_models` - Run performance benchmarks
+
+**Full Guide:** [MCP_INTEGRATION_GUIDE.md](docs/MCP_INTEGRATION_GUIDE.md)
+
 ## Documentation
 
 ### Installation & Distribution
 - **[MOMO_KIBIDANGO_INSTALLATION_DESIGN.md](docs/MOMO_KIBIDANGO_INSTALLATION_DESIGN.md)** - Comprehensive installation strategy with full scripts (Script-based, MCP protocol, PyPI package)
 - **[INSTALLATION_METHODS_QUICK_REFERENCE.txt](docs/INSTALLATION_METHODS_QUICK_REFERENCE.txt)** - Quick comparison, decision tree, and timeline
+- **[MCP_INTEGRATION_GUIDE.md](docs/MCP_INTEGRATION_GUIDE.md)** - Model Context Protocol integration for LLM agents
 
 ### Production & Integration
 - **[PRODUCTION_DEPLOYMENT.md](docs/PRODUCTION_DEPLOYMENT.md)** - Deployment guide, monitoring, scaling

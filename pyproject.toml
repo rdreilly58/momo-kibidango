@@ -75,6 +75,7 @@ Changelog = "https://github.com/rdreilly58/momo-kibidango/releases"
 
 [project.scripts]
 momo-kibidango = "momo_kibidango.cli:main"
+mcp-server-momo-kibidango = "momo_kibidango.mcp_server:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/momo_kibidango"]
