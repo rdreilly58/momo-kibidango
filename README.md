@@ -33,7 +33,21 @@ This project implements speculative decoding techniques to accelerate large lang
 
 ### 🚀 Installation (Phase 1: Script-Based)
 
-#### ⚡ One-Line Install (Recommended)
+#### ⚡ PyPI Install (Recommended - Week 2+)
+```bash
+# Simple pip install from PyPI
+pip install momo-kibidango
+
+# With optional dependencies
+pip install momo-kibidango[dev]      # Development tools
+pip install momo-kibidango[jupyter]  # Jupyter notebook support
+pip install momo-kibidango[mcp]      # Agent integration via MCP
+pip install momo-kibidango[inference] # Advanced inference (vLLM)
+```
+
+**Time:** <1 minute | **Best for:** Production, sharing, latest stable release
+
+#### ⚡ One-Line Install (Script-Based - Week 1)
 ```bash
 # From repository root
 ./install.sh
@@ -68,9 +82,16 @@ After installation, you can use:
 
 #### Alternative Installation Methods
 
-**PyPI Package** (Production - Coming Week 2)
+**From Git** (Latest development)
 ```bash
-pip install momo-kibidango  # Not yet available
+pip install git+https://github.com/rdreilly58/momo-kibidango.git
+```
+
+**Editable Install** (Development)
+```bash
+git clone https://github.com/rdreilly58/momo-kibidango.git
+cd momo-kibidango
+pip install -e ".[dev]"  # Editable + dev tools
 ```
 
 **Manual Setup** (Development)

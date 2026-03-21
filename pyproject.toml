@@ -1,0 +1,113 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "momo-kibidango"
+version = "1.0.0"
+description = "Speculative decoding framework for Apple Silicon and beyond"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "Apache-2.0"}
+authors = [
+    {name = "Robert Reilly", email = "robert.reilly@reillydesignstudio.com"},
+]
+keywords = [
+    "speculative-decoding",
+    "inference",
+    "llm",
+    "apple-silicon",
+    "performance",
+    "optimization",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+dependencies = [
+    "torch>=2.0.0",
+    "transformers>=4.30.0",
+    "pydantic>=2.0.0",
+    "numpy>=1.24.0",
+    "tqdm>=4.65.0",
+]
+
+# Note: vLLM is optional for advanced users
+# Install separately: pip install vllm
+# For basic speculative decoding, these core deps are sufficient
+
+[project.optional-dependencies]
+inference = [
+    "vllm>=0.3.0",
+]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "black>=23.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0",
+    "build>=1.0.0",
+    "twine>=4.0.0",
+]
+mcp = [
+    "mcp>=0.1.0",
+]
+jupyter = [
+    "jupyter>=1.0",
+    "ipykernel>=6.25",
+]
+
+[project.urls]
+Repository = "https://github.com/rdreilly58/momo-kibidango"
+Documentation = "https://github.com/rdreilly58/momo-kibidango/blob/main/README.md"
+Issues = "https://github.com/rdreilly58/momo-kibidango/issues"
+Changelog = "https://github.com/rdreilly58/momo-kibidango/releases"
+
+[project.scripts]
+momo-kibidango = "momo_kibidango.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/momo_kibidango"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/README.md",
+    "/LICENSE",
+    "/CHANGELOG.md",
+    "/docs",
+    "/examples",
+    "/src",
+    "/tests",
+]
+
+[tool.black]
+line-length = 88
+target-version = ["py310", "py311", "py312"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+select = ["E", "F", "W", "I", "N", "UP", "B", "C4", "PIE"]
+ignore = ["E501"]  # Line too long (handled by black)
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+addopts = "-v --cov=src/momo_kibidango --cov-report=html --cov-report=term-missing"

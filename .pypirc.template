@@ -1,0 +1,27 @@
+# PyPI Configuration Template
+# 
+# Copy this to ~/.pypirc and fill in your API tokens
+# 
+# To get API tokens:
+#   1. https://pypi.org/account/tokens/ (production PyPI)
+#   2. https://test.pypi.org/account/tokens/ (TestPyPI)
+#   3. Create token with "Entire repository" scope
+#   4. Copy token and paste into password field below
+#
+# Permissions:
+#   chmod 600 ~/.pypirc
+
+[distutils]
+index-servers =
+    pypi
+    testpypi
+
+[pypi]
+repository = https://upload.pypi.org/legacy/
+username = __token__
+password = pypi-AgEIcHlwaS5vcmc...PASTE_YOUR_PYPI_TOKEN_HERE...
+
+[testpypi]
+repository = https://test.pypi.org/legacy/
+username = __token__
+password = pypi-NG0KfHlwaS5vcmc...PASTE_YOUR_TESTPYPI_TOKEN_HERE...
