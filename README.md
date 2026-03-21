@@ -33,6 +33,21 @@ This project implements speculative decoding techniques to accelerate large lang
 
 ### Installation
 
+Three installation methods available:
+
+#### 1️⃣ **Script-Based** (Fastest - Recommended for Quick Evaluation)
+```bash
+curl -fsSL https://raw.githubusercontent.com/rdreilly58/momo-kibidango/main/install.sh | bash
+```
+**Time:** ~5-10 minutes | **Best for:** Quick testing, learning, early adopters
+
+#### 2️⃣ **PyPI Package** (Production - Recommended for Production Use)
+```bash
+pip install momo-kibidango
+```
+**Time:** ~2-3 minutes | **Best for:** Professional use, global distribution
+
+#### 3️⃣ **Local Development** (Manual Setup)
 ```bash
 # Clone repository
 git clone https://github.com/rdreilly58/momo-kibidango.git
@@ -45,6 +60,9 @@ source venv/bin/activate
 # Install dependencies
 pip install -r requirements.txt
 ```
+**Time:** ~10 minutes | **Best for:** Contributing, customization
+
+**See [INSTALLATION_METHODS_QUICK_REFERENCE.txt](docs/INSTALLATION_METHODS_QUICK_REFERENCE.txt) for detailed comparison and decision tree.**
 
 ### Basic Usage
 
@@ -101,6 +119,26 @@ python scripts/benchmark_3model.py
 # Test subset
 python scripts/benchmark_3model.py --scenarios 5
 ```
+
+## Documentation
+
+### Installation & Distribution
+- **[MOMO_KIBIDANGO_INSTALLATION_DESIGN.md](docs/MOMO_KIBIDANGO_INSTALLATION_DESIGN.md)** - Comprehensive installation strategy with full scripts (Script-based, MCP protocol, PyPI package)
+- **[INSTALLATION_METHODS_QUICK_REFERENCE.txt](docs/INSTALLATION_METHODS_QUICK_REFERENCE.txt)** - Quick comparison, decision tree, and timeline
+
+### Production & Integration
+- **[PRODUCTION_DEPLOYMENT.md](docs/PRODUCTION_DEPLOYMENT.md)** - Deployment guide, monitoring, scaling
+- **[OPENCLAW_INTEGRATION.md](docs/OPENCLAW_INTEGRATION.md)** - REST API, CLI integration, batch processing
+
+### Research & Performance
+- **[SPECULATIVE_DECODING_EXPLAINED.md](docs/SPECULATIVE_DECODING_EXPLAINED.md)** - Technical overview of speculative decoding
+- **[PERFORMANCE_COMPARISON_REPORT.md](docs/PERFORMANCE_COMPARISON_REPORT.md)** - Benchmarks and performance analysis
+- **[3MODEL_SPECULATIVE_DECODING_ANALYSIS.md](docs/3MODEL_SPECULATIVE_DECODING_ANALYSIS.md)** - 3-model pyramid architecture details
+
+### Development Phases
+- **[PHASE2_RESULTS.md](docs/PHASE2_RESULTS.md)** - 2-model baseline implementation
+- **[PHASE3_ARCHITECTURE_DESIGN.md](docs/PHASE3_ARCHITECTURE_DESIGN.md)** - 3-model architecture
+- **[PHASE4_RESULTS.md](docs/PHASE4_RESULTS.md)** - Final production hardening
 
 ## Production Deployment
 

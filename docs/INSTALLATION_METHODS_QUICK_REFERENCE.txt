@@ -1,0 +1,321 @@
+================================================================================
+        MOMO-KIBIDANGO INSTALLATION METHODS - QUICK REFERENCE
+================================================================================
+
+Three approaches to install & integrate momo-kibidango framework
+
+================================================================================
+METHOD 1: SCRIPT-BASED (FASTEST)
+================================================================================
+
+Installation:
+  curl -fsSL https://...install.sh | bash
+
+Time:         ~5-10 minutes (+ model download)
+Complexity:   ⭐ (very simple)
+Best For:     Quick evaluation, testing, learning
+Users:        Individual developers, researchers
+
+What happens:
+  1. Detects Python version (3.10+ required)
+  2. Creates isolated venv (~/.momo-kibidango/)
+  3. Installs dependencies (torch, vllm, transformers)
+  4. Downloads models (Qwen2-7B, Phi-2) ~8-10GB
+  5. Creates config file
+  6. Runs validation test
+
+Key Features:
+  ✓ Zero external dependencies (just bash)
+  ✓ Automatic system detection
+  ✓ Idempotent (safe to run multiple times)
+  ✓ Easy rollback (single venv directory)
+  ✓ Works on macOS, Linux, WSL
+
+Files Created:
+  ~/.momo-kibidango/venv/              # Python virtual environment
+  ~/.momo-kibidango/models/            # Downloaded models (8-10GB)
+  ~/.momo-kibidango/config/config.yaml # Configuration file
+  
+Uninstall:
+  rm -rf ~/.momo-kibidango
+
+Typical Output:
+  🍑 Momo-Kibidango Installation
+  ==================================
+  ✓ Python 3.11
+  ✓ Disk space OK
+  ✓ venv created
+  ✓ Dependencies installed
+  ✓ Models downloaded
+  ✓ Configuration created
+  ✓ Validation passed
+  
+  ✅ Installation complete!
+
+
+================================================================================
+METHOD 2: AI AGENT INTEGRATION (MCP PROTOCOL)
+================================================================================
+
+Purpose:     Make momo-kibidango available to LLM agents
+Protocol:    Model Context Protocol (Anthropic standard)
+Setup:       python -m momo_kibidango.mcp_server
+
+Time:        ~10-15 minutes
+Complexity:  ⭐⭐ (moderate, requires MCP understanding)
+Best For:    Agent workflows, Claude/OpenAI integrations
+Users:       AI engineers, automation teams
+
+Architecture:
+  
+  Agent (Claude, etc)
+        ↓ (calls tools)
+  MCP Client
+        ↓ (JSON-RPC)
+  MCP Server (momo-kibidango)
+        ↓ (runs inference)
+  Speculative Decoding Engine
+        ↓ (produces output)
+  Agent (receives result)
+
+Available Tools:
+  • run_inference
+    Input: prompt, max_tokens, temperature
+    Output: Generated text, timing stats
+  
+  • benchmark_models
+    Input: test_cases, output_format
+    Output: Performance comparison data
+
+Usage Example:
+
+  from anthropic import Anthropic
+  
+  client = Anthropic()
+  client.add_mcp_server({
+    "name": "momo-kibidango",
+    "command": "python -m momo_kibidango.mcp_server"
+  })
+  
+  response = client.messages.create(
+    model="claude-opus-4-0",
+    tools=[{"type": "mcp", "mcp_name": "momo-kibidango"}],
+    messages=[...],
+  )
+
+Key Features:
+  ✓ Native integration with Claude, other LLMs
+  ✓ Standardized protocol (MCP becoming industry standard)
+  ✓ Composable (use with other MCP servers)
+  ✓ Tool discovery (agents auto-detect capabilities)
+  ✓ Version-aware (MCP spec handles compatibility)
+
+Overhead:
+  ✗ Requires MCP server process (extra memory)
+  ✗ JSON-RPC latency (~50-100ms per call)
+  ✗ Protocol maturity (MCP spec updates frequent)
+
+Best For:
+  • Automating benchmarking workflows
+  • Agent-driven optimization loops
+  • Research evaluation pipelines
+  • Integration with multi-tool agents
+
+
+================================================================================
+METHOD 3: PYTHON PACKAGE (PYPI)
+================================================================================
+
+Installation:  pip install momo-kibidango
+
+Time:          ~2-3 minutes (+ model download)
+Complexity:    ⭐ (standard Python, familiar to most)
+Best For:      Production use, distribution, sharing
+Users:         All Python developers
+
+Installation Options:
+
+  # Stable release
+  pip install momo-kibidango
+  
+  # Latest development
+  pip install git+https://github.com/rdreilly58/momo-kibidango.git
+  
+  # With MCP support
+  pip install momo-kibidango[mcp]
+  
+  # All optional features
+  pip install momo-kibidango[dev,mcp,jupyter]
+
+Package Structure:
+  momo-kibidango/
+  ├── __init__.py
+  ├── inference.py          # Core inference engine
+  ├── speculative_decoding/ # SD implementation
+  ├── mcp_server.py         # Optional MCP integration
+  ├── cli.py                # Command-line interface
+  └── config/               # Configuration templates
+
+CLI Usage:
+  momo-kibidango --prompt "Hello world" --max-tokens 100
+  momo-kibidango benchmark --test-cases 10 --output-format json
+  momo-kibidango config create --template production
+
+Key Features:
+  ✓ Standard Python installation (familiar workflow)
+  ✓ Versioned releases (semantic versioning)
+  ✓ Dependency resolution (pip handles sub-deps)
+  ✓ Easy uninstall (pip uninstall momo-kibidango)
+  ✓ Discoverability (findable on PyPI.org)
+  ✓ Optional dependencies (users choose features)
+
+Publishing:
+  1. Build: python -m build
+  2. Test: twine upload --testpypi dist/*
+  3. Release: twine upload dist/*
+  
+  Automated via GitHub Actions on version tags
+
+Key Limitations:
+  ✗ Models NOT packaged (downloaded separately)
+  ✗ Release management overhead (versioning, testing)
+  ✗ PyPI size limits (why models excluded)
+
+Version Strategy:
+  1.0.0 = Initial release (2-model baseline)
+  1.1.0 = Add 3-model architecture
+  1.2.0 = Optimize for Apple Neural Engine
+  2.0.0 = Break changes (new interface)
+
+
+================================================================================
+COMPARISON TABLE
+================================================================================
+
+Aspect              Script      MCP          PyPI
+────────────────────────────────────────────────────────────────────────────
+Setup Time          5-10 min    10-15 min    2-3 min
+Learning Curve      Very Low    Medium       Very Low
+Distribution        GitHub      Any          Global (PyPI)
+Versioning          Latest      MCP spec     Semantic versioning
+Agent Integration   ❌          ✅           ❌
+CLI Available       ✓           ✓            ✓
+Dependency Mgmt     Manual      Standard     Automatic (pip)
+Production-Ready    Beta        Beta         ✅ (recommended)
+Discoverability     GitHub      Registry     PyPI.org
+Best Use Case       Quick eval  AI workflows Professional use
+
+
+================================================================================
+INSTALLATION TIMELINE RECOMMENDATION
+================================================================================
+
+Week 1: Script Phase
+  □ Polish install.sh
+  □ Add error handling & validation
+  □ Create uninstall.sh
+  □ Document troubleshooting
+  
+  Result: One-liner install ready for early adopters
+
+Week 2: PyPI Phase
+  □ Finalize pyproject.toml (PEP 621)
+  □ Build wheel locally
+  □ Test on TestPyPI
+  □ Publish v1.0.0 to PyPI
+  
+  Result: Production-ready package available globally
+
+Week 3: MCP Phase
+  □ Implement MCP server
+  □ Define tool schemas
+  □ Test with Anthropic SDK
+  □ Create MCP documentation
+  
+  Result: AI agents can use momo-kibidango
+
+Week 4: Launch
+  □ Announce on communities (HN, Reddit, r/MachineLearning)
+  □ Write blog post
+  □ Update website & GitHub
+  □ Create example notebooks
+  
+  Result: Ecosystem adoption begins
+
+
+================================================================================
+DECISION TREE: WHICH METHOD TO USE?
+================================================================================
+
+Start Here: What's your use case?
+
+├─ "I want to quickly try it"
+│  └─ USE: Script-based installation
+│     (curl | bash, 5 minutes to running inference)
+│
+├─ "I need it in production"
+│  └─ USE: PyPI package
+│     (pip install, versioned, stable)
+│
+├─ "I'm building an agent"
+│  └─ USE: MCP integration
+│     (Claude can call momo-kibidango as a tool)
+│
+├─ "I'm contributing/developing"
+│  └─ USE: Local clone + pip install -e ".[dev]"
+│     (editable install, full feature set)
+│
+└─ "I want all three"
+   └─ RECOMMENDED: Implement hybrid approach
+      (Script for quick-start, PyPI for stability, MCP for agents)
+
+
+================================================================================
+KEY DESIGN DECISIONS
+================================================================================
+
+1. NO MODELS IN PACKAGE
+   Why: 8-10GB wheel would be unwieldy
+   How: Download on first run or via separate CLI
+   
+2. OPTIONAL DEPENDENCIES
+   Why: Not everyone needs MCP or Jupyter
+   How: pip install momo-kibidango[mcp,jupyter]
+   
+3. ISOLATED VIRTUAL ENVIRONMENT
+   Why: Avoid system Python pollution
+   How: Script creates ~/.momo-kibidango/venv
+   
+4. CLI ENTRY POINT
+   Why: Easy access from anywhere
+   How: pyproject.toml scripts section + pip installs
+   
+5. CONFIGURATION FILE
+   Why: Users customize without code changes
+   How: YAML config in ~/.momo-kibidango/config/
+
+
+================================================================================
+NEXT STEPS FOR BOB
+================================================================================
+
+1. Review this design document (you're reading it!)
+2. Choose which methods to prioritize:
+   □ Script first (fastest to users)
+   □ PyPI first (professional from day 1)
+   □ All three in parallel (maximum coverage)
+
+3. Approve timeline & resource allocation
+4. Delegate implementation to coding subagent
+
+Estimated effort:
+  • Script: 4-8 hours (polish + testing)
+  • PyPI: 6-10 hours (packaging + publishing)
+  • MCP: 8-12 hours (protocol implementation + testing)
+  • Total: 18-30 hours (parallel execution faster)
+
+
+================================================================================
+
+Document prepared: March 20, 2026, 8:20 PM EDT
+For detailed specs, see: MOMO_KIBIDANGO_INSTALLATION_DESIGN.md
