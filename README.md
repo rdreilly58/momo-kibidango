@@ -31,38 +31,64 @@ This project implements speculative decoding techniques to accelerate large lang
 
 ## Quick Start
 
-### Installation
+### 🚀 Installation (Phase 1: Script-Based)
 
-Three installation methods available:
-
-#### 1️⃣ **Script-Based** (Fastest - Recommended for Quick Evaluation)
+#### ⚡ One-Line Install (Recommended)
 ```bash
+# From repository root
+./install.sh
+
+# Or from anywhere via curl
 curl -fsSL https://raw.githubusercontent.com/rdreilly58/momo-kibidango/main/install.sh | bash
 ```
-**Time:** ~5-10 minutes | **Best for:** Quick testing, learning, early adopters
 
-#### 2️⃣ **PyPI Package** (Production - Recommended for Production Use)
+**What it does:**
+- ✓ Detects Python version (3.10+ required)
+- ✓ Creates isolated virtual environment at `~/.momo-kibidango/venv/`
+- ✓ Installs all dependencies (torch, transformers, pydantic, numpy, tqdm, pyyaml)
+- ✓ Creates configuration at `~/.momo-kibidango/config/`
+- ✓ Validates installation automatically
+
+**Time:** ~5-10 minutes | **Best for:** Quick evaluation, learning, testing
+
+#### Companion Scripts
+
+After installation, you can use:
+
 ```bash
-pip install momo-kibidango
+# Validate installation
+./validate-installation.sh
+
+# Update dependencies and repository
+./update.sh
+
+# Clean uninstall (moves to Trash)
+./uninstall.sh
 ```
-**Time:** ~2-3 minutes | **Best for:** Professional use, global distribution
 
-#### 3️⃣ **Local Development** (Manual Setup)
+#### Alternative Installation Methods
+
+**PyPI Package** (Production - Coming Week 2)
 ```bash
-# Clone repository
+pip install momo-kibidango  # Not yet available
+```
+
+**Manual Setup** (Development)
+```bash
 git clone https://github.com/rdreilly58/momo-kibidango.git
 cd momo-kibidango
-
-# Create virtual environment
 python -m venv venv
 source venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
+pip install torch transformers pydantic numpy tqdm pyyaml
 ```
-**Time:** ~10 minutes | **Best for:** Contributing, customization
 
-**See [INSTALLATION_METHODS_QUICK_REFERENCE.txt](docs/INSTALLATION_METHODS_QUICK_REFERENCE.txt) for detailed comparison and decision tree.**
+#### Troubleshooting
+
+If installation fails, see **[INSTALLATION_TROUBLESHOOTING.md](INSTALLATION_TROUBLESHOOTING.md)** for:
+- Common issues and solutions
+- Platform-specific setup (macOS, Linux, WSL)
+- FAQ and debugging tips
+- Performance tuning
 
 ### Basic Usage
 
