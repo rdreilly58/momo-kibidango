@@ -17,8 +17,8 @@ from momo_kibidango.exceptions import APIError, ConfigurationError
 
 logger = logging.getLogger(__name__)
 
-# Default gateway URL (OpenClaw's OpenAI-compatible proxy)
-DEFAULT_GATEWAY_URL = "http://127.0.0.1:18789/v1"
+# Default gateway URL — OpenRouter (OpenAI-compatible, Claude models available)
+DEFAULT_GATEWAY_URL = "https://openrouter.ai/api/v1"
 
 # Model IDs for the Claude cascade tiers (OpenClaw gateway format)
 CLAUDE_HAIKU = "anthropic/claude-haiku-4-5"
@@ -114,7 +114,7 @@ class ClaudeClient:
         gateway_url: str | None = None,
         fallback_to_direct: bool = True,
     ) -> None:
-        self._api_key = api_key or os.environ.get("ANTHROPIC_API_KEY", "")
+        self._api_key = api_key or os.environ.get("OPENROUTER_API_KEY", "") or os.environ.get("ANTHROPIC_API_KEY", "")
         self._max_retries = max_retries
         self._timeout = timeout
         self._gateway_url = gateway_url or os.environ.get(
@@ -143,7 +143,7 @@ class ClaudeClient:
                 ) from exc
             self._gateway_client = OpenAI(
                 base_url=self._gateway_url,
-                api_key="not-needed",
+                api_key=self._api_key or "not-needed",
                 max_retries=self._max_retries,
                 timeout=self._timeout,
             )
