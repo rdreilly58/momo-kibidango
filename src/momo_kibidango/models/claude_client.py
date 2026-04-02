@@ -210,9 +210,9 @@ class ClaudeClient:
         m = model.split("/")[-1] if "/" in model else model
         # Map to dated Anthropic model IDs
         ANTHROPIC_MODEL_MAP = {
-            "claude-haiku-4-5": "claude-3-haiku-20240307",
-            "claude-sonnet-4-5": "claude-3-5-sonnet-20240620",
-            "claude-opus-4": "claude-3-opus-20240229",
+            "claude-haiku-4-5": "claude-haiku-4-5-20251001",
+            "claude-sonnet-4-5": "claude-sonnet-4-5-20250929",
+            "claude-opus-4": "claude-opus-4-20250514",
         }
         return ANTHROPIC_MODEL_MAP.get(m, m)
 
