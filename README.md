@@ -1,344 +1,312 @@
 # momo-kibidango
 
-Production-ready speculative decoding implementation achieving 1.9-2.1x speedup in LLM inference while maintaining output quality.
-
-## 🚀 v1.0.0 - Production Ready
-
-This release includes comprehensive production hardening, monitoring, error handling, and full OpenClaw integration.
-
-## Overview
-
-This project implements speculative decoding techniques to accelerate large language model inference using hierarchical multi-model architectures. Based on research from Google's PyramidSD paper, enhanced with production-grade features.
-
-## Features
-
-- **2-Model Speculative Decoding**: Draft model + target model (1.92x speedup)
-- **3-Model Pyramid Architecture**: Draft + qualifier + target models (1.97x speedup)  
-- **Automatic Fallback**: Graceful degradation on memory constraints (3→2→1 model)
-- **Production Hardening**: Error handling, rate limiting, input validation
-- **Comprehensive Monitoring**: Prometheus metrics, health checks, alerting
-- **OpenClaw Native**: CLI tool, REST API, batch processing
-- **Performance Optimization**: Token batching, KV-cache sharing, model caching
-- **Security**: Input sanitization, API authentication, resource limits
-
-## Performance
-
-| Configuration | Speedup | Memory Usage | Use Case |
-|--------------|---------|--------------|----------|
-| Baseline (7B) | 1.0x | 7GB | Reference |
-| 2-Model | 1.92x | 10.8GB | Default, stable |
-| 3-Model Pyramid | 1.97x | 11.6GB | Maximum performance |
-
-## Quick Start
-
-### 🚀 Installation (Phase 1: Script-Based)
-
-#### ⚡ PyPI Install (Recommended - Week 2+)
-```bash
-# Simple pip install from PyPI
-pip install momo-kibidango
-
-# With optional dependencies
-pip install momo-kibidango[dev]      # Development tools
-pip install momo-kibidango[jupyter]  # Jupyter notebook support
-pip install momo-kibidango[mcp]      # Agent integration via MCP
-pip install momo-kibidango[inference] # Advanced inference (vLLM)
-```
-
-**Time:** <1 minute | **Best for:** Production, sharing, latest stable release
-
-#### ⚡ One-Line Install (Script-Based - Week 1)
-```bash
-# From repository root
-./install.sh
-
-# Or from anywhere via curl
-curl -fsSL https://raw.githubusercontent.com/rdreilly58/momo-kibidango/main/install.sh | bash
-```
-
-**What it does:**
-- ✓ Detects Python version (3.10+ required)
-- ✓ Creates isolated virtual environment at `~/.momo-kibidango/venv/`
-- ✓ Installs all dependencies (torch, transformers, pydantic, numpy, tqdm, pyyaml)
-- ✓ Creates configuration at `~/.momo-kibidango/config/`
-- ✓ Validates installation automatically
-
-**Time:** ~5-10 minutes | **Best for:** Quick evaluation, learning, testing
-
-#### Companion Scripts
-
-After installation, you can use:
-
-```bash
-# Validate installation
-./validate-installation.sh
-
-# Update dependencies and repository
-./update.sh
-
-# Clean uninstall (moves to Trash)
-./uninstall.sh
-```
-
-#### Alternative Installation Methods
-
-**From Git** (Latest development)
-```bash
-pip install git+https://github.com/rdreilly58/momo-kibidango.git
-```
-
-**Editable Install** (Development)
-```bash
-git clone https://github.com/rdreilly58/momo-kibidango.git
-cd momo-kibidango
-pip install -e ".[dev]"  # Editable + dev tools
-```
-
-**Manual Setup** (Development)
-```bash
-git clone https://github.com/rdreilly58/momo-kibidango.git
-cd momo-kibidango
-python -m venv venv
-source venv/bin/activate
-pip install torch transformers pydantic numpy tqdm pyyaml
-```
-
-#### Troubleshooting
-
-If installation fails, see **[INSTALLATION_TROUBLESHOOTING.md](INSTALLATION_TROUBLESHOOTING.md)** for:
-- Common issues and solutions
-- Platform-specific setup (macOS, Linux, WSL)
-- FAQ and debugging tips
-- Performance tuning
-
-### Basic Usage
-
-```python
-# 2-Model (default)
-from src.speculative_2model import SpeculativeDecoder, ModelConfig
-
-config = ModelConfig()
-decoder = SpeculativeDecoder(config)
-result = decoder.generate("The future of AI is", max_length=100)
-print(result["generated_text"])
-
-# 3-Model Pyramid
-from src.speculative_3model import PyramidSpeculativeDecoder, ModelConfig
-
-config = ModelConfig()
-decoder = PyramidSpeculativeDecoder(config)
-result = decoder.generate("The future of AI is", max_length=100)
-print(result["generated_text"])
-```
-
-### OpenClaw API Server
-
-```bash
-# Start server (defaults to 2-model)
-python src/openclaw_integration.py
-
-# Start with 3-model enabled
-python src/openclaw_integration.py --use-3model
-
-# Use the client
-python scripts/openclaw_client.py infer "Tell me a story"
-```
+A modular 3-tier speculative decoding framework for accelerating LLM inference.
 
 ## Architecture
 
-### 2-Model Configuration
-- **Draft Model**: Qwen2.5-1.5B-Instruct
-- **Target Model**: Qwen2.5-7B-Instruct
-
-### 3-Model Pyramid Configuration
-- **Draft Model**: Qwen2.5-0.5B-Instruct (ultra-fast)
-- **Qualifier Model**: Phi-2 2.7B (quality filter)
-- **Target Model**: Qwen2.5-7B-Instruct (final verification)
-
-## Benchmarking
-
-Run comprehensive benchmarks:
-
-```bash
-# Test all 15 scenarios
-python scripts/benchmark_3model.py
-
-# Test subset
-python scripts/benchmark_3model.py --scenarios 5
+```
+                    ┌─────────────────────────────────────────┐
+                    │          User Interfaces                │
+                    │   CLI  ·  REST API  ·  MCP Protocol     │
+                    └───────────────┬─────────────────────────┘
+                                    │
+                    ┌───────────────▼─────────────────────────┐
+                    │       GenerationRequest / Result         │
+                    │          (core/decoder.py)               │
+                    └───────────────┬─────────────────────────┘
+                                    │
+           ┌────────────────────────┼────────────────────────┐
+           │                        │                        │
+  ┌────────▼─────────┐   ┌─────────▼────────┐   ┌──────────▼─────────┐
+  │  TwoModelDecoder  │   │ ThreeModelDecoder │   │  Single Model      │
+  │  (draft+target)   │   │ (draft+qual+tgt)  │   │  (fallback only)   │
+  └────────┬─────────┘   └─────────┬────────┘   └──────────┬─────────┘
+           │                        │                        │
+           └────────────────────────┼────────────────────────┘
+                                    │
+                    ┌───────────────▼─────────────────────────┐
+                    │  AdaptiveThreshold  ·  KVCacheManager   │
+                    │  TokenizerBridge    ·  MetricsCollector  │
+                    └───────────────┬─────────────────────────┘
+                                    │
+                    ┌───────────────▼─────────────────────────┐
+                    │         ModelRegistry + ModelLoader      │
+                    │   (memory-aware, dtype fallback chain)   │
+                    └───────────────┬─────────────────────────┘
+                                    │
+           ┌────────────────────────┼────────────────────────┐
+           │                        │                        │
+  ┌────────▼─────────┐   ┌─────────▼────────┐   ┌──────────▼─────────┐
+  │   Tier 1: Draft   │   │  Tier 2: Qualifier│   │  Tier 3: Target    │
+  │  Qwen2.5-0.5B     │   │  Phi-2 (2.7B)     │   │  Qwen2.5-7B        │
+  │  (ultra-fast)      │   │  (medium filter)   │   │  (final verify)    │
+  └───────────────────┘   └──────────────────┘   └────────────────────┘
 ```
 
-## 🤖 AI Agent Integration (MCP Protocol)
+### How speculative decoding works
 
-### Quick Start with Claude
+1. **Draft** — A small, fast model generates K candidate tokens in K sequential steps
+2. **Qualify** (3-tier only) — A mid-size model filters candidates, rejecting unlikely tokens
+3. **Verify** — The large target model scores all surviving candidates in a *single* forward pass
+4. **Accept/Reject** — Tokens where the target probability exceeds the threshold are accepted; the first rejection triggers a resample
 
-```bash
-# 1. Install MCP support
-pip install momo-kibidango[mcp]
+Because GPU forward passes process multiple tokens nearly as fast as one, verifying 5 tokens costs roughly the same as generating 1. This yields 1.5-2x+ speedup with identical output quality.
 
-# 2. Start MCP server
-momo-kibidango serve
+### Adaptive thresholds
 
-# 3. Use with Claude (in another terminal)
-python examples/claude_agent_example.py
+Acceptance thresholds auto-tune at runtime using an EMA controller:
+- If acceptance rate is too high → threshold increases (saves verification compute)
+- If acceptance rate is too low → threshold decreases (avoids excessive fallbacks)
+
+## Package structure
+
+```
+src/momo_kibidango/
+├── __init__.py              # Lazy-loaded public API
+├── exceptions.py            # Custom exception hierarchy
+├── utils.py                 # Device detection, logging, memory utils
+├── cli.py                   # CLI entry point (argparse)
+├── config/
+│   ├── settings.py          # Pydantic settings (DecoderSettings, ServerSettings)
+│   └── defaults.yaml        # Default configuration
+├── core/
+│   ├── decoder.py           # BaseDecoder ABC, GenerationRequest/Result
+│   ├── two_model.py         # 2-model speculative decoder
+│   ├── three_model.py       # 3-tier pyramid decoder
+│   ├── adaptive.py          # Adaptive threshold controller
+│   └── kv_cache.py          # KV-cache reuse manager
+├── models/
+│   ├── registry.py          # Model tier registry
+│   ├── loader.py            # Memory-aware model loader
+│   └── tokenizer_bridge.py  # Cross-tokenizer mapping
+├── monitoring/
+│   ├── metrics.py           # Lightweight metrics collector
+│   └── health.py            # System health checker
+└── api/
+    ├── server.py            # Flask REST API (port 7779)
+    └── mcp_server.py        # MCP protocol server for AI agents
 ```
 
-### Python Integration
+## Installation
+
+```bash
+pip install momo-kibidango
+
+# With server support
+pip install momo-kibidango[server]
+
+# Development
+pip install momo-kibidango[dev]
+```
+
+### From source
+
+```bash
+git clone https://github.com/rdreilly58/momo-kibidango.git
+cd momo-kibidango
+pip install -e ".[dev,server]"
+```
+
+## Quick start
+
+### CLI
+
+```bash
+# Run inference (auto-detects 2-model or 3-model based on config)
+momo-kibidango run --prompt "The future of AI is" --max-tokens 128
+
+# With a custom config file
+momo-kibidango run -p "Hello world" -c config.yaml --device mps
+
+# Run benchmarks
+momo-kibidango benchmark --num-prompts 10 --output results.json
+
+# Start REST API server
+momo-kibidango serve --port 7779
+
+# Validate installation
+momo-kibidango validate
+```
+
+### Python API
 
 ```python
-from anthropic import Anthropic
-
-client = Anthropic()
-
-# Register momo-kibidango MCP server
-client.add_mcp_server({
-    "name": "momo-kibidango",
-    "command": "momo-kibidango serve",
-})
-
-# Claude can now use speculative decoding
-response = client.messages.create(
-    model="claude-opus-4-0",
-    max_tokens=1024,
-    tools=[{"type": "mcp", "mcp_name": "momo-kibidango"}],
-    messages=[{
-        "role": "user",
-        "content": "Benchmark speculative decoding performance and recommend if we should use it in production"
-    }],
+from momo_kibidango import (
+    DecoderSettings, ModelRegistry, ModelLoader,
+    TwoModelDecoder, MetricsCollector, AdaptiveThreshold,
+    GenerationRequest,
 )
+
+# Configure
+settings = DecoderSettings(
+    draft_model_id="Qwen/Qwen2.5-0.5B-Instruct",
+    target_model_id="Qwen/Qwen2.5-7B-Instruct",
+    device="auto",
+    adaptive_enabled=True,
+)
+
+# Build the pipeline
+registry = ModelRegistry.from_settings(settings)
+loader = ModelLoader(device=settings.resolve_device())
+metrics = MetricsCollector()
+adaptive = AdaptiveThreshold()
+
+decoder = TwoModelDecoder(settings, registry, loader, metrics, adaptive)
+decoder.load()
+
+# Generate
+request = GenerationRequest(prompt="Explain quantum computing:", max_new_tokens=256)
+result = decoder.generate(request)
+
+print(result.text)
+print(f"Speed: {result.tokens_per_second:.1f} tok/s")
+print(f"Acceptance rate: {result.acceptance_rate:.1%}")
+
+decoder.unload()
 ```
 
-**Available Tools:**
-- `run_inference` - Execute speculative decoding on a prompt
-- `benchmark_models` - Run performance benchmarks
+### 3-tier mode
 
-**Full Guide:** [MCP_INTEGRATION_GUIDE.md](docs/MCP_INTEGRATION_GUIDE.md)
+```python
+settings = DecoderSettings(
+    draft_model_id="Qwen/Qwen2.5-0.5B-Instruct",
+    qualifier_model_id="microsoft/phi-2",       # enables 3-tier
+    target_model_id="Qwen/Qwen2.5-7B-Instruct",
+)
+# ... same pipeline setup, use ThreeModelDecoder
+```
 
-## Documentation
+## Configuration
 
-### Installation & Distribution
-- **[MOMO_KIBIDANGO_INSTALLATION_DESIGN.md](docs/MOMO_KIBIDANGO_INSTALLATION_DESIGN.md)** - Comprehensive installation strategy with full scripts (Script-based, MCP protocol, PyPI package)
-- **[INSTALLATION_METHODS_QUICK_REFERENCE.txt](docs/INSTALLATION_METHODS_QUICK_REFERENCE.txt)** - Quick comparison, decision tree, and timeline
-- **[MCP_INTEGRATION_GUIDE.md](docs/MCP_INTEGRATION_GUIDE.md)** - Model Context Protocol integration for LLM agents
+Settings can be provided via:
+1. **Constructor arguments** (highest priority)
+2. **Environment variables** with `MOMO_` prefix (e.g., `MOMO_TEMPERATURE=0.5`)
+3. **YAML file** via `DecoderSettings.from_yaml("config.yaml")`
+4. **Defaults** (lowest priority)
 
-### Production & Integration
-- **[PRODUCTION_DEPLOYMENT.md](docs/PRODUCTION_DEPLOYMENT.md)** - Deployment guide, monitoring, scaling
-- **[OPENCLAW_INTEGRATION.md](docs/OPENCLAW_INTEGRATION.md)** - REST API, CLI integration, batch processing
+### Configuration reference
 
-### Research & Performance
-- **[SPECULATIVE_DECODING_EXPLAINED.md](docs/SPECULATIVE_DECODING_EXPLAINED.md)** - Technical overview of speculative decoding
-- **[PERFORMANCE_COMPARISON_REPORT.md](docs/PERFORMANCE_COMPARISON_REPORT.md)** - Benchmarks and performance analysis
-- **[3MODEL_SPECULATIVE_DECODING_ANALYSIS.md](docs/3MODEL_SPECULATIVE_DECODING_ANALYSIS.md)** - 3-model pyramid architecture details
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `draft_model_id` | `Qwen/Qwen2.5-0.5B-Instruct` | Tier 1 draft model |
+| `qualifier_model_id` | `None` | Tier 2 qualifier (None = 2-model mode) |
+| `target_model_id` | `Qwen/Qwen2.5-7B-Instruct` | Tier 3 target model |
+| `max_draft_tokens` | `5` | Candidates per draft round (1-20) |
+| `temperature` | `0.7` | Sampling temperature (0-2) |
+| `top_p` | `0.9` | Nucleus sampling threshold (0-1) |
+| `stage1_threshold` | `0.10` | Draft→qualifier acceptance threshold |
+| `stage2_threshold` | `0.03` | Qualifier→target acceptance threshold |
+| `adaptive_enabled` | `True` | Enable adaptive threshold tuning |
+| `device` | `auto` | Compute device (auto/cuda/mps/cpu) |
+| `memory_headroom_gb` | `2.0` | Reserved memory headroom |
 
-### Development Phases
-- **[PHASE2_RESULTS.md](docs/PHASE2_RESULTS.md)** - 2-model baseline implementation
-- **[PHASE3_ARCHITECTURE_DESIGN.md](docs/PHASE3_ARCHITECTURE_DESIGN.md)** - 3-model architecture
-- **[PHASE4_RESULTS.md](docs/PHASE4_RESULTS.md)** - Final production hardening
+## REST API
 
-## Production Deployment
+Start the server:
+```bash
+momo-kibidango serve --port 7779
+```
 
-See [PRODUCTION_DEPLOYMENT.md](docs/PRODUCTION_DEPLOYMENT.md) for comprehensive deployment guide.
+### Endpoints
 
-### Quick Production Setup
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/health` | Liveness check |
+| GET | `/ready` | Readiness check |
+| POST | `/infer` | Run inference |
+| POST | `/batch` | Batch inference |
+| GET | `/metrics` | Metrics summary |
+
+### Example
 
 ```bash
-# Install with production dependencies
-pip install -r requirements.txt
-pip install prometheus-client psutil
-
-# Initialize models
-python -m src.openclaw_native --initialize
-
-# Start with monitoring
-python -m src.openclaw_integration_v2
-
-# Check health
-curl http://localhost:5000/health
+curl -X POST http://localhost:7779/infer \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "Hello world", "max_tokens": 64}'
 ```
 
-## API Reference
+## Performance
 
-See [OPENCLAW_INTEGRATION.md](docs/OPENCLAW_INTEGRATION.md) for full API documentation.
+| Configuration | Speedup | Memory | Acceptance Rate |
+|--------------|---------|--------|-----------------|
+| Baseline (7B only) | 1.0x | ~7 GB | N/A |
+| 2-Model (0.5B + 7B) | ~1.9x | ~10.8 GB | ~70% |
+| 3-Model (0.5B + 2.7B + 7B) | ~2.0x | ~11.6 GB | ~80% |
 
-### Key Endpoints
+### Benchmark results format
 
-- `POST /infer` - Generate text
-- `POST /batch` - Batch generation  
-- `GET /status` - System status
-- `GET /metrics` - Prometheus metrics
-- `GET /health` - Health check
-
-## Monitoring
-
-Access metrics at `http://localhost:8080/metrics`:
-
-- Throughput: `speculative_decoding_throughput_tokens_per_second`
-- Latency: `speculative_decoding_latency_seconds` 
-- Memory: `speculative_decoding_memory_usage_gb`
-- Acceptance rates: `speculative_decoding_acceptance_rate`
-
-## Development
-
-### Project Structure
-```
-momo-kibidango/
-├── src/
-│   ├── production_hardening.py      # Error handling, monitoring
-│   ├── monitoring.py                # Metrics collection
-│   ├── performance_optimization.py  # Batching, caching
-│   ├── openclaw_native.py          # CLI interface
-│   ├── openclaw_integration_v2.py  # REST API
-│   ├── speculative_3model_production.py  # Production decoder
-│   └── [legacy implementations]
-├── tests/
-│   ├── test_production.py          # Unit tests
-│   ├── test_performance.py         # Performance tests
-│   └── run_tests.py               # Test runner with coverage
-├── docs/
-│   ├── PRODUCTION_DEPLOYMENT.md    # Deployment guide
-│   ├── OPENCLAW_INTEGRATION.md     # Integration guide
-│   └── PHASE*_RESULTS.md          # Research results
-└── ~/.openclaw/workspace/skills/
-    └── speculative-decoding/       # OpenClaw skill location
-```
-
-### Testing
-
-```bash
-# Run all tests
-python tests/run_tests.py
-
-# With coverage report
-python tests/run_tests.py --coverage --html
-
-# Specific test suite
-python tests/run_tests.py --test test_production.TestResourceMonitor
-```
-
-### Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Run benchmarks to ensure performance
-4. Submit a pull request
-
-## Citation
-
-```bibtex
-@article{byun2024pyramidsd,
-  title={PyramidSD: Accelerating Speculative Decoding with Hierarchical Draft Verification},
-  author={Byun, Jungwoo and others},
-  journal={NeurIPS},
-  year={2025}
+```json
+{
+  "prompt": "The future of AI is",
+  "tokens_generated": 64,
+  "tokens_per_second": 45.2,
+  "acceptance_rate": 0.72,
+  "elapsed_seconds": 1.42,
+  "peak_memory_gb": 10.8,
+  "mode": "2model"
 }
 ```
 
+## Graceful fallback
+
+The system auto-degrades when resources are insufficient:
+
+```
+3-model (full pyramid)
+  │ qualifier fails to load / OOM
+  ▼
+2-model (draft + target)
+  │ draft fails to load / OOM
+  ▼
+1-model (target only)
+  │ target fails to load
+  ▼
+Error with diagnostic message
+```
+
+## Testing
+
+```bash
+# Run all tests
+pytest tests/
+
+# Unit tests only
+pytest tests/test_unit/
+
+# Integration tests
+pytest tests/test_integration/
+
+# Performance benchmarks (slower)
+pytest tests/test_performance/ -m slow
+
+# With coverage
+pytest tests/ --cov=src/momo_kibidango --cov-report=term-missing
+```
+
+### Test organization
+
+| Directory | Tests | Description |
+|-----------|-------|-------------|
+| `tests/test_unit/` | 163 | Every module, class, and public method |
+| `tests/test_integration/` | 30 | Full pipeline, API, fallback chains |
+| `tests/test_performance/` | 16 | Benchmarks, throughput, memory bounds |
+| `tests/test_acceptance/` | 18 | Quality validation, prompt variety |
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/my-feature`
+3. Install dev dependencies: `pip install -e ".[dev]"`
+4. Make changes and add tests
+5. Run tests: `pytest tests/`
+6. Submit a pull request
+
+### Code standards
+
+- Type hints on all functions
+- Docstrings on all classes and public methods
+- Run `ruff check src/` and `mypy src/` before submitting
+
 ## License
 
-MIT License - see LICENSE file for details.
-
-## Acknowledgments
-
-- Google Research for the PyramidSD paper
-- Qwen team for the model family
-- Microsoft for Phi-2 model
-- OpenClaw team for integration support
+MIT License. See [LICENSE](LICENSE) for details.

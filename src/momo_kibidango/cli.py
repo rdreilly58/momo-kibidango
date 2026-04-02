@@ -1,322 +1,376 @@
 #!/usr/bin/env python3
 """
-Momo-Kibidango CLI Entry Point
+Momo-Kibidango CLI
 
-Provides command-line interface for running inference, benchmarks, validation, and MCP server.
+Command-line interface for running inference, benchmarks, validation,
+and the REST API server.
 """
 
 import argparse
-import asyncio
 import sys
-from pathlib import Path
 from typing import Optional
 
-try:
-    from .speculative_2model import SpeculativeDecoder, ModelConfig
-    from .monitoring import PerformanceMonitor
-    from .production_hardening import ProductionHardener
-except ImportError:
-    # Allow CLI to work even if heavy dependencies missing
-    SpeculativeDecoder = None
-    ModelConfig = None
-    PerformanceMonitor = None
-    ProductionHardener = None
 
-try:
-    from .mcp_server import MomoKibidangoMCPServer
-    HAS_MCP = True
-except ImportError:
-    HAS_MCP = False
-    MomoKibidangoMCPServer = None
+def _load_settings(config_path: Optional[str] = None):
+    """Load DecoderSettings from a YAML file or return defaults."""
+    from momo_kibidango.config.settings import DecoderSettings
+
+    if config_path:
+        return DecoderSettings.from_yaml(config_path)
+    return DecoderSettings()
 
 
-def setup_parser() -> argparse.ArgumentParser:
-    """Create and configure CLI argument parser."""
-    parser = argparse.ArgumentParser(
-        prog="momo-kibidango",
-        description="Speculative decoding framework for Apple Silicon and beyond",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  momo-kibidango --version
-  momo-kibidango run --prompt "Hello world"
-  momo-kibidango benchmark
-  momo-kibidango validate
-        """,
-    )
+def _build_decoder(settings, mode: str):
+    """Construct the appropriate decoder based on mode and settings.
 
-    parser.add_argument(
-        "--version",
-        action="version",
-        version="%(prog)s 1.0.0",
-    )
+    Parameters
+    ----------
+    settings:
+        A ``DecoderSettings`` instance.
+    mode:
+        One of ``"2model"``, ``"3model"``, or ``"auto"``.
 
-    subparsers = parser.add_subparsers(dest="command", help="Command to run")
+    Returns
+    -------
+    BaseDecoder
+        A ``TwoModelDecoder`` or ``ThreeModelDecoder`` ready to be loaded.
+    """
+    from momo_kibidango.models.registry import ModelRegistry, ModelTier
+    from momo_kibidango.models.loader import ModelLoader
+    from momo_kibidango.monitoring.metrics import MetricsCollector
+    from momo_kibidango.core.adaptive import AdaptiveThreshold
+    from momo_kibidango.core.two_model import TwoModelDecoder
+    from momo_kibidango.core.three_model import ThreeModelDecoder
 
-    # Run inference
-    run_parser = subparsers.add_parser("run", help="Run inference with speculative decoding")
-    run_parser.add_argument(
-        "--prompt",
-        "-p",
-        type=str,
-        required=True,
-        help="Input prompt for inference",
+    registry = ModelRegistry.from_settings(settings)
+    loader = ModelLoader(
+        device=settings.resolve_device(),
+        memory_headroom_gb=settings.memory_headroom_gb,
     )
-    run_parser.add_argument(
-        "--max-tokens",
-        type=int,
-        default=512,
-        help="Maximum tokens to generate (default: 512)",
-    )
-    run_parser.add_argument(
-        "--temperature",
-        type=float,
-        default=0.7,
-        help="Sampling temperature (default: 0.7)",
-    )
-    run_parser.add_argument(
-        "--draft-model",
-        type=str,
-        help="Draft model name (optional)",
-    )
-    run_parser.add_argument(
-        "--target-model",
-        type=str,
-        help="Target model name (optional)",
-    )
+    metrics = MetricsCollector()
 
-    # Benchmark
-    bench_parser = subparsers.add_parser("benchmark", help="Run performance benchmarks")
-    bench_parser.add_argument(
-        "--test-cases",
-        type=int,
-        default=10,
-        help="Number of test cases (default: 10)",
-    )
-    bench_parser.add_argument(
-        "--output",
-        "-o",
-        type=str,
-        help="Output file for benchmark results",
-    )
+    adaptive = None
+    if settings.adaptive_enabled:
+        adaptive = AdaptiveThreshold(
+            initial_stage1=settings.stage1_threshold,
+            initial_stage2=settings.stage2_threshold,
+            target_acceptance_rate=settings.adaptive_target_rate,
+            ema_alpha=settings.adaptive_ema_alpha,
+            warmup_iterations=settings.adaptive_warmup,
+        )
 
-    # Validate
-    val_parser = subparsers.add_parser("validate", help="Validate installation and dependencies")
-    val_parser.add_argument(
-        "--verbose",
-        "-v",
-        action="store_true",
-        help="Verbose validation output",
-    )
+    if mode == "3model" or (mode == "auto" and registry.has_tier(ModelTier.QUALIFIER)):
+        return ThreeModelDecoder(settings, registry, loader, metrics, adaptive)
+    return TwoModelDecoder(settings, registry, loader, metrics, adaptive)
 
-    # MCP Server
-    serve_parser = subparsers.add_parser(
-        "serve",
-        help="Start MCP (Model Context Protocol) server for agent integration",
-    )
-    serve_parser.add_argument(
-        "--log-level",
-        default="INFO",
-        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
-        help="Logging level (default: INFO)",
-    )
-    serve_parser.add_argument(
-        "--host",
-        default="localhost",
-        help="Host to bind to (default: localhost)",
-    )
-    serve_parser.add_argument(
-        "--port",
-        type=int,
-        default=8000,
-        help="Port to bind to (default: 8000)",
-    )
 
-    return parser
+# ---------------------------------------------------------------------------
+# Command handlers
+# ---------------------------------------------------------------------------
 
 
 def cmd_run(args) -> int:
-    """Execute run command."""
+    """Run inference with speculative decoding."""
+    from momo_kibidango.core.decoder import GenerationRequest
+
     try:
-        if SpeculativeDecoder is None:
-            print("❌ Speculative decoding dependencies not installed", file=sys.stderr)
-            print("Install with: pip install momo-kibidango[inference]", file=sys.stderr)
-            return 1
-        
-        print(f"🍑 Running inference with speculative decoding...")
-        print(f"  Prompt: {args.prompt}")
-        print(f"  Max tokens: {args.max_tokens}")
-        print(f"  Temperature: {args.temperature}")
-        
-        # TODO: Implement actual inference
-        print("✅ Inference complete (placeholder)")
+        settings = _load_settings(args.config)
+        if args.device:
+            settings = settings.model_copy(update={"device": args.device})
+
+        decoder = _build_decoder(settings, args.mode)
+        decoder.load()
+        try:
+            request = GenerationRequest(
+                prompt=args.prompt,
+                max_new_tokens=args.max_tokens,
+                temperature=args.temperature,
+            )
+            result = decoder.generate(request)
+
+            print(f"\n{result.text}")
+            print(f"\n--- Metrics ---")
+            print(f"Mode: {result.mode}")
+            print(f"Tokens: {result.tokens_generated}")
+            print(f"Speed: {result.tokens_per_second:.1f} tok/s")
+            print(f"Acceptance: {result.acceptance_rate:.1%}")
+            print(f"Memory: {result.peak_memory_gb:.2f} GB")
+            print(f"Time: {result.elapsed_seconds:.2f}s")
+        finally:
+            decoder.unload()
         return 0
-        
+
     except Exception as e:
-        print(f"❌ Error: {e}", file=sys.stderr)
+        print(f"Error: {e}", file=sys.stderr)
         return 1
 
 
 def cmd_benchmark(args) -> int:
-    """Execute benchmark command."""
+    """Run performance benchmarks across a set of test prompts."""
+    from momo_kibidango.core.decoder import GenerationRequest
+
+    test_prompts = [
+        "The future of artificial intelligence is",
+        "Once upon a time in a land far away",
+        "def fibonacci(n):",
+        "Explain quantum computing in simple terms:",
+        "The best way to learn programming is",
+    ][: args.num_prompts]
+
     try:
-        if PerformanceMonitor is None:
-            print("❌ Benchmark dependencies not installed", file=sys.stderr)
-            print("Install with: pip install momo-kibidango[inference]", file=sys.stderr)
-            return 1
-        
-        print(f"🍑 Running benchmarks...")
-        print(f"  Test cases: {args.test_cases}")
-        
-        # TODO: Implement actual benchmarking
-        print("✅ Benchmarks complete (placeholder)")
-        
-        if args.output:
-            print(f"📊 Results saved to: {args.output}")
-        
+        settings = _load_settings(args.config)
+        decoder = _build_decoder(settings, "auto")
+        decoder.load()
+        try:
+            results = []
+            for prompt in test_prompts:
+                request = GenerationRequest(prompt=prompt, max_new_tokens=64)
+                result = decoder.generate(request)
+                entry = {
+                    "prompt": prompt,
+                    "tokens_generated": result.tokens_generated,
+                    "tokens_per_second": result.tokens_per_second,
+                    "acceptance_rate": result.acceptance_rate,
+                    "elapsed_seconds": result.elapsed_seconds,
+                    "peak_memory_gb": result.peak_memory_gb,
+                    "mode": result.mode,
+                }
+                results.append(entry)
+                print(f"  {prompt[:40]}... => {result.tokens_per_second:.1f} tok/s")
+
+            # Summary
+            avg_speed = sum(r["tokens_per_second"] for r in results) / len(results)
+            avg_acceptance = sum(r["acceptance_rate"] for r in results) / len(results)
+            print(f"\nAverage: {avg_speed:.1f} tok/s, {avg_acceptance:.1%} acceptance")
+
+            if args.output:
+                import json
+
+                with open(args.output, "w") as f:
+                    json.dump(results, f, indent=2)
+                print(f"Results saved to {args.output}")
+        finally:
+            decoder.unload()
         return 0
-        
+
     except Exception as e:
-        print(f"❌ Error: {e}", file=sys.stderr)
-        return 1
-
-
-def cmd_validate(args) -> int:
-    """Execute validate command."""
-    try:
-        print(f"🍑 Validating installation...")
-        
-        # Check imports
-        checks = {
-            "PyTorch": False,
-            "Transformers": False,
-            "vLLM": False,
-            "Pydantic": False,
-            "MCP": False,
-        }
-        
-        try:
-            import torch
-            checks["PyTorch"] = True
-            if args.verbose:
-                print(f"  ✓ PyTorch {torch.__version__}")
-        except ImportError:
-            pass
-        
-        try:
-            import transformers
-            checks["Transformers"] = True
-            if args.verbose:
-                print(f"  ✓ Transformers {transformers.__version__}")
-        except ImportError:
-            pass
-        
-        try:
-            import vllm
-            checks["vLLM"] = True
-            if args.verbose:
-                print(f"  ✓ vLLM {vllm.__version__}")
-        except ImportError:
-            pass
-        
-        try:
-            import pydantic
-            checks["Pydantic"] = True
-            if args.verbose:
-                print(f"  ✓ Pydantic {pydantic.__version__}")
-        except ImportError:
-            pass
-
-        try:
-            import mcp
-            checks["MCP"] = True
-            if args.verbose:
-                print(f"  ✓ MCP SDK (available for agent integration)")
-        except ImportError:
-            if args.verbose:
-                print(f"  ℹ MCP SDK (optional, for agent integration)")
-        
-        # Print summary
-        passed = sum(1 for v in checks.values() if v)
-        total = len(checks)
-        
-        print(f"\n📊 Validation Results: {passed}/{total} checks passed")
-        for name, status in checks.items():
-            symbol = "✓" if status else "✗"
-            print(f"  {symbol} {name}")
-        
-        if passed >= 4:  # Core deps (PyTorch, Transformers, Pydantic, vLLM or core)
-            print("\n✅ Installation validated successfully!")
-            print("\nNext steps:")
-            if checks["MCP"]:
-                print("  • Start MCP server: momo-kibidango serve")
-            else:
-                print("  • Install MCP for agent integration: pip install momo-kibidango[mcp]")
-            return 0
-        else:
-            print(f"\n❌ {total - passed} dependency/dependencies missing")
-            return 1
-        
-    except Exception as e:
-        print(f"❌ Error: {e}", file=sys.stderr)
+        print(f"Error: {e}", file=sys.stderr)
         return 1
 
 
 def cmd_serve(args) -> int:
-    """Execute serve command (start MCP server)."""
+    """Start the REST API server."""
     try:
-        if not HAS_MCP:
-            print("❌ MCP SDK not installed", file=sys.stderr)
-            print("Install with: pip install momo-kibidango[mcp]", file=sys.stderr)
-            return 1
-        
-        print(f"🍑 Starting Momo-Kibidango MCP Server...")
-        print(f"  Log level: {args.log_level}")
-        print(f"  Listening in stdio mode (for direct agent integration)")
-        print(f"")
-        print(f"Integration:")
-        print(f"  • Claude SDK: client.add_mcp_server(...)")
-        print(f"  • Tools available: run_inference, benchmark_models")
-        print(f"")
-        
-        # Create and run server
-        server = MomoKibidangoMCPServer(log_level=args.log_level)
-        
-        # Run async server
-        asyncio.run(server.run(host=args.host, port=args.port))
-        
+        settings = _load_settings(args.config)
+        from momo_kibidango.config.settings import ServerSettings
+
+        server_settings = ServerSettings(host=args.host, port=args.port)
+
+        print(f"Starting momo-kibidango server on {args.host}:{args.port}")
+        print("Press Ctrl+C to stop.\n")
+
+        # Import and launch the server application
+        from momo_kibidango.api.server import create_app
+
+        app = create_app(settings, server_settings)
+
+        import uvicorn
+
+        uvicorn.run(app, host=args.host, port=args.port)
         return 0
-        
+
     except KeyboardInterrupt:
-        print(f"\n🛑 Server stopped", file=sys.stderr)
+        print("\nServer stopped.")
         return 0
     except Exception as e:
-        print(f"❌ Error: {e}", file=sys.stderr)
+        print(f"Error: {e}", file=sys.stderr)
         return 1
+
+
+def cmd_validate(args) -> int:
+    """Check installation and dependency availability."""
+    print("Checking dependencies...\n")
+    checks = []
+
+    # -- torch ---------------------------------------------------------------
+    try:
+        import torch
+
+        checks.append(("torch", True, torch.__version__))
+    except ImportError:
+        checks.append(("torch", False, "not installed"))
+
+    # -- transformers --------------------------------------------------------
+    try:
+        import transformers
+
+        checks.append(("transformers", True, transformers.__version__))
+    except ImportError:
+        checks.append(("transformers", False, "not installed"))
+
+    # -- pydantic ------------------------------------------------------------
+    try:
+        import pydantic
+
+        checks.append(("pydantic", True, pydantic.__version__))
+    except ImportError:
+        checks.append(("pydantic", False, "not installed"))
+
+    # -- pyyaml --------------------------------------------------------------
+    try:
+        import yaml
+
+        checks.append(("pyyaml", True, yaml.__version__))
+    except ImportError:
+        checks.append(("pyyaml", False, "not installed"))
+
+    # -- Device availability -------------------------------------------------
+    cuda_available = False
+    mps_available = False
+    try:
+        import torch as _torch
+
+        cuda_available = _torch.cuda.is_available()
+        mps_available = (
+            hasattr(_torch.backends, "mps") and _torch.backends.mps.is_available()
+        )
+    except ImportError:
+        pass
+
+    if cuda_available:
+        device_count = _torch.cuda.device_count()
+        device_name = _torch.cuda.get_device_name(0)
+        checks.append(("CUDA", True, f"{device_count} device(s) - {device_name}"))
+    else:
+        checks.append(("CUDA", False, "not available"))
+
+    if mps_available:
+        checks.append(("MPS (Apple Silicon)", True, "available"))
+    else:
+        checks.append(("MPS (Apple Silicon)", False, "not available"))
+
+    # -- Print results -------------------------------------------------------
+    name_width = max(len(name) for name, _, _ in checks)
+    passed = 0
+    for name, ok, detail in checks:
+        status = "OK" if ok else "MISSING"
+        print(f"  {name:<{name_width}}  [{status:>7}]  {detail}")
+        if ok:
+            passed += 1
+
+    print(f"\n{passed}/{len(checks)} checks passed.")
+
+    # Determine recommended device
+    if cuda_available:
+        rec_device = "cuda"
+    elif mps_available:
+        rec_device = "mps"
+    else:
+        rec_device = "cpu"
+    print(f"Recommended device: {rec_device}")
+
+    # A non-zero exit only when core deps are missing
+    core_ok = all(ok for name, ok, _ in checks if name in ("torch", "transformers", "pydantic"))
+    if not core_ok:
+        print("\nCore dependencies are missing. Install with: pip install momo-kibidango")
+        return 1
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# Argument parser
+# ---------------------------------------------------------------------------
+
+
+def _build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="momo-kibidango",
+        description="3-tier speculative decoding framework for LLM inference acceleration",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""\
+examples:
+  momo-kibidango run -p "Explain gravity"
+  momo-kibidango benchmark --num-prompts 3 -o results.json
+  momo-kibidango serve --port 7779
+  momo-kibidango validate
+""",
+    )
+    parser.add_argument(
+        "--version", action="version", version="%(prog)s 2.0.0"
+    )
+
+    subparsers = parser.add_subparsers(dest="command", help="Available commands")
+
+    # -- run -----------------------------------------------------------------
+    run_p = subparsers.add_parser("run", help="Run inference with speculative decoding")
+    run_p.add_argument("--prompt", "-p", type=str, required=True, help="Input prompt")
+    run_p.add_argument(
+        "--max-tokens", type=int, default=256, help="Max tokens to generate (default: 256)"
+    )
+    run_p.add_argument(
+        "--temperature", type=float, default=0.7, help="Sampling temperature (default: 0.7)"
+    )
+    run_p.add_argument(
+        "--mode",
+        type=str,
+        default="auto",
+        choices=["2model", "3model", "auto"],
+        help="Decoding mode (default: auto)",
+    )
+    run_p.add_argument("--config", "-c", type=str, default=None, help="Path to YAML config file")
+    run_p.add_argument(
+        "--device", type=str, default=None, help="Override device (auto/cuda/mps/cpu)"
+    )
+
+    # -- benchmark -----------------------------------------------------------
+    bench_p = subparsers.add_parser("benchmark", help="Run performance benchmarks")
+    bench_p.add_argument(
+        "--num-prompts", type=int, default=5, help="Number of test prompts (default: 5)"
+    )
+    bench_p.add_argument("--config", "-c", type=str, default=None, help="Path to config file")
+    bench_p.add_argument(
+        "--output", "-o", type=str, default=None, help="Output file for results (JSON)"
+    )
+
+    # -- serve ---------------------------------------------------------------
+    serve_p = subparsers.add_parser("serve", help="Start REST API server")
+    serve_p.add_argument("--host", type=str, default="0.0.0.0", help="Server host (default: 0.0.0.0)")
+    serve_p.add_argument("--port", type=int, default=7779, help="Server port (default: 7779)")
+    serve_p.add_argument("--config", "-c", type=str, default=None, help="Path to config file")
+
+    # -- validate ------------------------------------------------------------
+    subparsers.add_parser("validate", help="Check installation and dependencies")
+
+    return parser
+
+
+# ---------------------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------------------
 
 
 def main(argv: Optional[list[str]] = None) -> int:
     """Main CLI entry point."""
-    parser = setup_parser()
+    parser = _build_parser()
     args = parser.parse_args(argv)
-    
-    # Show help if no command
+
     if not args.command:
         parser.print_help()
         return 0
-    
-    # Dispatch to command handler
-    if args.command == "run":
-        return cmd_run(args)
-    elif args.command == "benchmark":
-        return cmd_benchmark(args)
-    elif args.command == "validate":
-        return cmd_validate(args)
-    elif args.command == "serve":
-        return cmd_serve(args)
-    else:
+
+    handlers = {
+        "run": cmd_run,
+        "benchmark": cmd_benchmark,
+        "serve": cmd_serve,
+        "validate": cmd_validate,
+    }
+
+    handler = handlers.get(args.command)
+    if handler is None:
         print(f"Unknown command: {args.command}", file=sys.stderr)
         return 1
+
+    return handler(args)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,94 @@
+# ============================================================================
+# momo-kibidango — default configuration
+# ============================================================================
+# Copy this file and pass its path to DecoderSettings.from_yaml() or set
+# the MOMO_CONFIG environment variable.  Any value can also be overridden
+# with a MOMO_<FIELD_NAME> environment variable (e.g. MOMO_TEMPERATURE=0.5).
+
+decoder:
+  # ── Model identifiers ────────────────────────────────────────────────
+  # The draft model proposes candidate tokens (small & fast).
+  draft_model_id: "Qwen/Qwen2.5-0.5B-Instruct"
+
+  # Optional qualifier model for 3-model mode.  Set to null for 2-model
+  # speculative decoding (draft + target only).
+  qualifier_model_id: null
+
+  # The target model verifies proposed tokens (large & accurate).
+  target_model_id: "Qwen/Qwen2.5-7B-Instruct"
+
+  # ── Per-model tokenizer overrides ────────────────────────────────────
+  # When null the model_id itself is used as the tokenizer identifier.
+  draft_tokenizer_id: null
+  qualifier_tokenizer_id: null
+  target_tokenizer_id: null
+
+  # ── Data types ───────────────────────────────────────────────────────
+  # Supported: "float16", "bfloat16", "float32", "int8", "int4"
+  draft_dtype: "float16"
+  qualifier_dtype: "float16"
+  target_dtype: "float16"
+
+  # ── Generation parameters ────────────────────────────────────────────
+  # Number of tokens the draft model proposes per step (1–20).
+  max_draft_tokens: 5
+
+  # Sampling temperature (0 = greedy, up to 2.0 for more randomness).
+  temperature: 0.7
+
+  # Nucleus sampling probability mass (0.0–1.0).
+  top_p: 0.9
+
+  # ── Verification thresholds ──────────────────────────────────────────
+  # Minimum probability difference to accept a draft token at stage 1.
+  stage1_threshold: 0.10
+
+  # Minimum probability difference to accept a draft token at stage 2
+  # (used in 3-model mode only).
+  stage2_threshold: 0.03
+
+  # ── Adaptive threshold tuning ────────────────────────────────────────
+  # Enable automatic threshold adjustment to hit the target acceptance rate.
+  adaptive_enabled: true
+
+  # Target acceptance rate the adaptive algorithm aims for (0.0–1.0).
+  adaptive_target_rate: 0.70
+
+  # Exponential moving average smoothing factor for acceptance tracking.
+  adaptive_ema_alpha: 0.05
+
+  # Number of requests before adaptive tuning begins adjusting thresholds.
+  adaptive_warmup: 20
+
+  # ── Resource management ──────────────────────────────────────────────
+  # Device selection: "auto" detects cuda > mps > cpu.
+  device: "auto"
+
+  # Reserved memory headroom in GB — models will not be loaded if doing
+  # so would leave less than this amount free.
+  memory_headroom_gb: 2.0
+
+  # ── Safety / limits ──────────────────────────────────────────────────
+  # Maximum inbound requests per minute (per client).
+  rate_limit_per_minute: 60
+
+  # Maximum input prompt length in tokens.
+  max_prompt_length: 4096
+
+  # Maximum output length in tokens.
+  max_output_length: 4096
+
+  # Hard timeout for a single generation request (seconds).
+  request_timeout_seconds: 300
+
+
+server:
+  # ── Server settings ──────────────────────────────────────────────────
+  # Bind address — use "0.0.0.0" to listen on all interfaces.
+  host: "0.0.0.0"
+
+  # Port for the HTTP API server.
+  port: 7779
+
+  # Enable Prometheus-compatible metrics endpoint.
+  metrics_enabled: true

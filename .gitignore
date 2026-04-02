@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyc
+.eggs/
+*.egg-info/
+*.egg
+dist/
+build/
+.tox/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project-specific
+logs/
+*.jsonl
+/models/
+.benchmarks/
+
+# Env files
+.env
+.env.local
