@@ -20,7 +20,12 @@ def _load_settings(config_path: Optional[str] = None):
     return DecoderSettings()
 
 
-def _build_decoder(settings, mode: str, api_key: str | None = None):
+def _build_decoder(
+    settings,
+    mode: str,
+    api_key: str | None = None,
+    gateway_url: str | None = None,
+):
     """Construct the appropriate decoder based on mode and settings.
 
     Parameters
@@ -30,7 +35,9 @@ def _build_decoder(settings, mode: str, api_key: str | None = None):
     mode:
         One of ``"2model"``, ``"3model"``, ``"auto"``, or ``"cascade"``.
     api_key:
-        Optional Anthropic API key for cascade mode.
+        Optional Anthropic API key for direct fallback.
+    gateway_url:
+        Optional OpenClaw gateway URL override.
 
     Returns
     -------
@@ -39,8 +46,15 @@ def _build_decoder(settings, mode: str, api_key: str | None = None):
     """
     if mode == "cascade":
         from momo_kibidango.core.cascade import CascadeDecoder
+        from momo_kibidango.models.claude_client import ClaudeClient
 
-        return CascadeDecoder(api_key=api_key)
+        client = ClaudeClient(
+            api_key=api_key,
+            gateway_url=gateway_url,
+        )
+        backend = client.backend
+        print(f"Backend: {backend} ({client._gateway_url})" if backend == "gateway" else f"Backend: {backend}")
+        return CascadeDecoder(client=client)
 
     from momo_kibidango.models.registry import ModelRegistry, ModelTier
     from momo_kibidango.models.loader import ModelLoader
@@ -86,7 +100,8 @@ def cmd_run(args) -> int:
             settings = settings.model_copy(update={"device": args.device})
 
         api_key = getattr(args, "api_key", None)
-        decoder = _build_decoder(settings, args.mode, api_key=api_key)
+        gateway_url = getattr(args, "gateway_url", None)
+        decoder = _build_decoder(settings, args.mode, api_key=api_key, gateway_url=gateway_url)
         decoder.load()
         try:
             request = GenerationRequest(
@@ -141,7 +156,8 @@ def cmd_benchmark(args) -> int:
         settings = _load_settings(args.config)
         bench_mode = getattr(args, "mode", "auto") or "auto"
         api_key = getattr(args, "api_key", None)
-        decoder = _build_decoder(settings, bench_mode, api_key=api_key)
+        gateway_url = getattr(args, "gateway_url", None)
+        decoder = _build_decoder(settings, bench_mode, api_key=api_key, gateway_url=gateway_url)
         decoder.load()
         try:
             results = []
@@ -344,7 +360,11 @@ examples:
         "--device", type=str, default=None, help="Override device (auto/cuda/mps/cpu)"
     )
     run_p.add_argument(
-        "--api-key", type=str, default=None, help="Anthropic API key (or set ANTHROPIC_API_KEY)"
+        "--api-key", type=str, default=None, help="Anthropic API key for direct fallback (or set ANTHROPIC_API_KEY)"
+    )
+    run_p.add_argument(
+        "--gateway-url", type=str, default=None,
+        help="OpenClaw gateway URL (default: http://127.0.0.1:18789/v1)",
     )
 
     # -- benchmark -----------------------------------------------------------
@@ -364,7 +384,11 @@ examples:
         "--output", "-o", type=str, default=None, help="Output file for results (JSON)"
     )
     bench_p.add_argument(
-        "--api-key", type=str, default=None, help="Anthropic API key (or set ANTHROPIC_API_KEY)"
+        "--api-key", type=str, default=None, help="Anthropic API key for direct fallback (or set ANTHROPIC_API_KEY)"
+    )
+    bench_p.add_argument(
+        "--gateway-url", type=str, default=None,
+        help="OpenClaw gateway URL (default: http://127.0.0.1:18789/v1)",
     )
 
     # -- serve ---------------------------------------------------------------

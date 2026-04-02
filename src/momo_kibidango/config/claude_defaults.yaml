@@ -1,11 +1,17 @@
 # Claude Cascade Mode — Default Configuration
 # These settings configure the API-based 3-tier cascade decoder.
 
+# OpenClaw gateway (OpenAI-compatible proxy)
+gateway:
+  url: "http://127.0.0.1:18789/v1"
+  timeout: 300
+  fallback_to_direct: true
+
 cascade:
-  # Model IDs for each tier
-  haiku_model: "claude-haiku-4-5-20251001"
-  sonnet_model: "claude-sonnet-4-5-20250514"
-  opus_model: "claude-opus-4-20250514"
+  # Model IDs for each tier (OpenClaw gateway format)
+  haiku_model: "anthropic/claude-haiku-4-5"
+  sonnet_model: "anthropic/claude-sonnet-4-5"
+  opus_model: "anthropic/claude-opus-4"
 
   # Confidence thresholds (trigger tier escalation)
   high_threshold: 0.80    # Above this → accept Haiku result
