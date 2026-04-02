@@ -1,0 +1,18 @@
+decoder:
+  draft_model_id: "Qwen/Qwen2.5-0.5B-Instruct"
+  qualifier_model_id: null
+  target_model_id: "Qwen/Qwen2.5-1.5B-Instruct"
+  draft_dtype: "float16"
+  target_dtype: "float16"
+  max_draft_tokens: 5
+  temperature: 0.7
+  top_p: 0.9
+  stage1_threshold: 0.10
+  adaptive_enabled: true
+  device: "auto"
+  memory_headroom_gb: 2.0
+
+server:
+  host: "0.0.0.0"
+  port: 7779
+  metrics_enabled: true
