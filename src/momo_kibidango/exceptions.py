@@ -35,3 +35,15 @@ class GenerationTimeoutError(MomoError):
 
 class ConfigurationError(MomoError):
     """Invalid or missing configuration."""
+
+
+class CascadeError(MomoError):
+    """Error during cascade decoding (tier escalation failure, all tiers exhausted)."""
+
+
+class APIError(MomoError):
+    """Error communicating with an external API (Anthropic, etc.)."""
+
+
+class ConfidenceError(MomoError):
+    """Error during confidence scoring."""

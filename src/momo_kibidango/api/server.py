@@ -141,14 +141,24 @@ class InferenceServer:
                 stage_rates=result.stage_acceptance_rates,
             )
 
-            return jsonify({
+            response_data: dict[str, Any] = {
                 "text": result.text,
                 "tokens_generated": result.tokens_generated,
                 "tokens_per_second": result.tokens_per_second,
                 "elapsed_seconds": result.elapsed_seconds,
                 "acceptance_rate": result.acceptance_rate,
                 "mode": result.mode,
-            })
+            }
+
+            # Include cascade cost tracking when available
+            if result.mode == "cascade" and result.stage_acceptance_rates:
+                response_data["cascade"] = {
+                    "tier": result.stage_acceptance_rates.get("tier"),
+                    "confidence": result.stage_acceptance_rates.get("confidence"),
+                    "cost_usd": result.stage_acceptance_rates.get("cost_usd"),
+                }
+
+            return jsonify(response_data)
 
         except Exception as exc:
             logger.exception("Inference failed")

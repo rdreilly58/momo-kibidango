@@ -1,0 +1,42 @@
+# Claude Cascade Mode — Default Configuration
+# These settings configure the API-based 3-tier cascade decoder.
+
+cascade:
+  # Model IDs for each tier
+  haiku_model: "claude-haiku-4-5-20251001"
+  sonnet_model: "claude-sonnet-4-5-20250514"
+  opus_model: "claude-opus-4-20250514"
+
+  # Confidence thresholds (trigger tier escalation)
+  high_threshold: 0.80    # Above this → accept Haiku result
+  low_threshold: 0.50     # Below this → skip Sonnet, go to Opus
+  # Between low and high → escalate to Sonnet
+
+  # Self-scoring (asks Haiku to rate its own confidence — costs extra tokens)
+  enable_self_score: false
+
+  # Confidence scoring weights (must sum to ~1.0 for active scorers)
+  scoring_weights:
+    length: 0.25
+    coherence: 0.30
+    complexity: 0.35
+    self_score: 0.10    # ignored when enable_self_score is false
+
+  # Cost tracking
+  track_costs: true
+
+  # Rate limits per tier (requests per minute)
+  rate_limits:
+    haiku: 1000
+    sonnet: 500
+    opus: 100
+
+  # Max tokens per tier
+  max_tokens:
+    haiku: 4096
+    sonnet: 4096
+    opus: 4096
+
+  # API settings
+  max_retries: 3
+  timeout_seconds: 120

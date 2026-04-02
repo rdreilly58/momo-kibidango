@@ -20,7 +20,7 @@ def _load_settings(config_path: Optional[str] = None):
     return DecoderSettings()
 
 
-def _build_decoder(settings, mode: str):
+def _build_decoder(settings, mode: str, api_key: str | None = None):
     """Construct the appropriate decoder based on mode and settings.
 
     Parameters
@@ -28,13 +28,20 @@ def _build_decoder(settings, mode: str):
     settings:
         A ``DecoderSettings`` instance.
     mode:
-        One of ``"2model"``, ``"3model"``, or ``"auto"``.
+        One of ``"2model"``, ``"3model"``, ``"auto"``, or ``"cascade"``.
+    api_key:
+        Optional Anthropic API key for cascade mode.
 
     Returns
     -------
     BaseDecoder
-        A ``TwoModelDecoder`` or ``ThreeModelDecoder`` ready to be loaded.
+        A decoder instance ready to be loaded.
     """
+    if mode == "cascade":
+        from momo_kibidango.core.cascade import CascadeDecoder
+
+        return CascadeDecoder(api_key=api_key)
+
     from momo_kibidango.models.registry import ModelRegistry, ModelTier
     from momo_kibidango.models.loader import ModelLoader
     from momo_kibidango.monitoring.metrics import MetricsCollector
@@ -78,7 +85,8 @@ def cmd_run(args) -> int:
         if args.device:
             settings = settings.model_copy(update={"device": args.device})
 
-        decoder = _build_decoder(settings, args.mode)
+        api_key = getattr(args, "api_key", None)
+        decoder = _build_decoder(settings, args.mode, api_key=api_key)
         decoder.load()
         try:
             request = GenerationRequest(
@@ -96,6 +104,18 @@ def cmd_run(args) -> int:
             print(f"Acceptance: {result.acceptance_rate:.1%}")
             print(f"Memory: {result.peak_memory_gb:.2f} GB")
             print(f"Time: {result.elapsed_seconds:.2f}s")
+
+            # Show cascade cost savings if applicable
+            if result.mode == "cascade" and result.stage_acceptance_rates:
+                rates = result.stage_acceptance_rates
+                print(f"Tier: {rates.get('tier', 'unknown')}")
+                print(f"Confidence: {rates.get('confidence', 0):.2f}")
+                print(f"Cost: ${rates.get('cost_usd', 0):.6f}")
+                from momo_kibidango.core.cascade import CascadeDecoder
+
+                if isinstance(decoder, CascadeDecoder):
+                    summary = decoder.cost_tracker.summary()
+                    print(f"Savings vs Opus: ${summary['savings_usd']:.6f}")
         finally:
             decoder.unload()
         return 0
@@ -119,7 +139,9 @@ def cmd_benchmark(args) -> int:
 
     try:
         settings = _load_settings(args.config)
-        decoder = _build_decoder(settings, "auto")
+        bench_mode = getattr(args, "mode", "auto") or "auto"
+        api_key = getattr(args, "api_key", None)
+        decoder = _build_decoder(settings, bench_mode, api_key=api_key)
         decoder.load()
         try:
             results = []
@@ -314,12 +336,15 @@ examples:
         "--mode",
         type=str,
         default="auto",
-        choices=["2model", "3model", "auto"],
+        choices=["2model", "3model", "auto", "cascade"],
         help="Decoding mode (default: auto)",
     )
     run_p.add_argument("--config", "-c", type=str, default=None, help="Path to YAML config file")
     run_p.add_argument(
         "--device", type=str, default=None, help="Override device (auto/cuda/mps/cpu)"
+    )
+    run_p.add_argument(
+        "--api-key", type=str, default=None, help="Anthropic API key (or set ANTHROPIC_API_KEY)"
     )
 
     # -- benchmark -----------------------------------------------------------
@@ -327,9 +352,19 @@ examples:
     bench_p.add_argument(
         "--num-prompts", type=int, default=5, help="Number of test prompts (default: 5)"
     )
+    bench_p.add_argument(
+        "--mode",
+        type=str,
+        default="auto",
+        choices=["2model", "3model", "auto", "cascade"],
+        help="Decoding mode (default: auto)",
+    )
     bench_p.add_argument("--config", "-c", type=str, default=None, help="Path to config file")
     bench_p.add_argument(
         "--output", "-o", type=str, default=None, help="Output file for results (JSON)"
+    )
+    bench_p.add_argument(
+        "--api-key", type=str, default=None, help="Anthropic API key (or set ANTHROPIC_API_KEY)"
     )
 
     # -- serve ---------------------------------------------------------------

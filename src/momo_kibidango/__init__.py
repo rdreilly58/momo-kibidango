@@ -19,6 +19,9 @@ from momo_kibidango.exceptions import (
     InvalidPromptError,
     GenerationTimeoutError,
     ConfigurationError,
+    CascadeError,
+    APIError,
+    ConfidenceError,
 )
 
 __all__ = [
@@ -29,6 +32,9 @@ __all__ = [
     "TwoModelDecoder",
     "ThreeModelDecoder",
     "AdaptiveThreshold",
+    "CascadeDecoder",
+    "ConfidenceScorer",
+    "ConfidenceResult",
     # Configuration
     "DecoderSettings",
     "ServerSettings",
@@ -37,6 +43,8 @@ __all__ = [
     "ModelSpec",
     "ModelTier",
     "ModelLoader",
+    "ClaudeClient",
+    "CostTracker",
     # Monitoring
     "MetricsCollector",
     # Exceptions
@@ -49,6 +57,9 @@ __all__ = [
     "InvalidPromptError",
     "GenerationTimeoutError",
     "ConfigurationError",
+    "CascadeError",
+    "APIError",
+    "ConfidenceError",
 ]
 
 
@@ -66,6 +77,12 @@ def __getattr__(name: str):  # noqa: C901
     if name == "AdaptiveThreshold":
         from momo_kibidango.core.adaptive import AdaptiveThreshold
         return AdaptiveThreshold
+    if name == "CascadeDecoder":
+        from momo_kibidango.core.cascade import CascadeDecoder
+        return CascadeDecoder
+    if name in ("ConfidenceScorer", "ConfidenceResult"):
+        from momo_kibidango.core.confidence import ConfidenceScorer, ConfidenceResult
+        return {"ConfidenceScorer": ConfidenceScorer, "ConfidenceResult": ConfidenceResult}[name]
     if name in ("DecoderSettings", "ServerSettings"):
         from momo_kibidango.config.settings import DecoderSettings, ServerSettings
         return {"DecoderSettings": DecoderSettings, "ServerSettings": ServerSettings}[name]
@@ -75,6 +92,9 @@ def __getattr__(name: str):  # noqa: C901
     if name == "ModelLoader":
         from momo_kibidango.models.loader import ModelLoader
         return ModelLoader
+    if name in ("ClaudeClient", "CostTracker"):
+        from momo_kibidango.models.claude_client import ClaudeClient, CostTracker
+        return {"ClaudeClient": ClaudeClient, "CostTracker": CostTracker}[name]
     if name == "MetricsCollector":
         from momo_kibidango.monitoring.metrics import MetricsCollector
         return MetricsCollector

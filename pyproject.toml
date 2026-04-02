@@ -68,6 +68,9 @@ server = [
 mcp = [
     "mcp>=0.1.0",
 ]
+cascade = [
+    "anthropic>=0.45.0",
+]
 jupyter = [
     "jupyter>=1.0",
     "ipykernel>=6.25",

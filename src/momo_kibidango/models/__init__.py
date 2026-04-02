@@ -7,6 +7,8 @@ __all__ = [
     "ModelLoader",
     "LoadedModel",
     "TokenizerBridge",
+    "ClaudeClient",
+    "CostTracker",
 ]
 
 
@@ -20,4 +22,7 @@ def __getattr__(name: str):
     if name == "TokenizerBridge":
         from momo_kibidango.models.tokenizer_bridge import TokenizerBridge
         return TokenizerBridge
+    if name in ("ClaudeClient", "CostTracker"):
+        from momo_kibidango.models.claude_client import ClaudeClient, CostTracker
+        return {"ClaudeClient": ClaudeClient, "CostTracker": CostTracker}[name]
     raise AttributeError(f"module 'momo_kibidango.models' has no attribute {name!r}")

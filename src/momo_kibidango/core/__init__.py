@@ -7,6 +7,9 @@ __all__ = [
     "TwoModelDecoder",
     "ThreeModelDecoder",
     "AdaptiveThreshold",
+    "CascadeDecoder",
+    "ConfidenceScorer",
+    "ConfidenceResult",
 ]
 
 
@@ -23,4 +26,10 @@ def __getattr__(name: str):
     if name == "AdaptiveThreshold":
         from momo_kibidango.core.adaptive import AdaptiveThreshold
         return AdaptiveThreshold
+    if name == "CascadeDecoder":
+        from momo_kibidango.core.cascade import CascadeDecoder
+        return CascadeDecoder
+    if name in ("ConfidenceScorer", "ConfidenceResult"):
+        from momo_kibidango.core.confidence import ConfidenceScorer, ConfidenceResult
+        return {"ConfidenceScorer": ConfidenceScorer, "ConfidenceResult": ConfidenceResult}[name]
     raise AttributeError(f"module 'momo_kibidango.core' has no attribute {name!r}")
