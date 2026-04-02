@@ -200,6 +200,22 @@ class ClaudeClient:
         )
         return text or "", usage
 
+    @staticmethod
+    def _to_anthropic_model_id(model: str) -> str:
+        """Convert gateway-style model IDs to direct Anthropic format.
+        
+        e.g. 'anthropic/claude-haiku-4-5' -> 'claude-haiku-4-5-20250414'
+        """
+        # Strip provider prefix if present
+        m = model.split("/")[-1] if "/" in model else model
+        # Map to dated Anthropic model IDs
+        ANTHROPIC_MODEL_MAP = {
+            "claude-haiku-4-5": "claude-3-haiku-20240307",
+            "claude-sonnet-4-5": "claude-3-5-sonnet-20240620",
+            "claude-opus-4": "claude-3-opus-20240229",
+        }
+        return ANTHROPIC_MODEL_MAP.get(m, m)
+
     def _call_direct(
         self,
         prompt: str,
@@ -210,9 +226,10 @@ class ClaudeClient:
     ) -> tuple[str, TokenUsage]:
         """Send a completion request directly via Anthropic SDK."""
         client = self._ensure_direct_client()
+        api_model = self._to_anthropic_model_id(model)
         messages = [{"role": "user", "content": prompt}]
         kwargs: dict[str, Any] = {
-            "model": model,
+            "model": api_model,
             "max_tokens": max_tokens,
             "messages": messages,
             "temperature": temperature,
