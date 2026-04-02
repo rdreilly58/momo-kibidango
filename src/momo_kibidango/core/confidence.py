@@ -27,9 +27,9 @@ class ConfidenceResult:
     @property
     def tier_recommendation(self) -> str:
         """Suggest which tier should handle this based on score."""
-        if self.score >= 0.8:
+        if self.score >= 0.85:
             return "haiku"
-        if self.score >= 0.5:
+        if self.score >= 0.70:
             return "sonnet"
         return "opus"
 
@@ -60,6 +60,10 @@ class LengthScore:
         prompt_len = max(len(prompt.split()), 1)
         response_len = len(response.split())
         ratio = response_len / prompt_len
+
+        # Short prompts (<15 words) naturally get short answers — don't penalise
+        if prompt_len <= 15 and response_len >= 5:
+            return 0.95, f"Short prompt, adequate response ({response_len} words)"
 
         if ratio < self.min_ratio:
             return 0.3, f"Response too short (ratio {ratio:.1f})"
@@ -203,9 +207,9 @@ class ConfidenceScorer:
     """
 
     DEFAULT_WEIGHTS: dict[str, float] = {
-        "length": 0.25,
+        "length": 0.15,
         "coherence": 0.30,
-        "complexity": 0.35,
+        "complexity": 0.45,
         "self_score": 0.10,
     }
 

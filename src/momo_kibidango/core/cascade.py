@@ -40,8 +40,8 @@ class CascadeDecoder(BaseDecoder):
         client: ClaudeClient | None = None,
         api_key: str | None = None,
         scorer: ConfidenceScorer | None = None,
-        high_threshold: float = 0.8,
-        low_threshold: float = 0.5,
+        high_threshold: float = 0.85,
+        low_threshold: float = 0.70,
         haiku_model: str = CLAUDE_HAIKU,
         sonnet_model: str = CLAUDE_SONNET,
         opus_model: str = CLAUDE_OPUS,
@@ -182,6 +182,19 @@ class CascadeDecoder(BaseDecoder):
                 temperature=temperature,
             )
             sonnet_confidence = self._scorer.score(prompt, sonnet_text)
+
+            # Second-stage check: if Sonnet's result is still below threshold, escalate to Opus
+            if sonnet_confidence.score < self._low_threshold:
+                logger.info(
+                    "Cascade: Sonnet still low confidence %.2f, escalating to Opus",
+                    sonnet_confidence.score,
+                )
+                opus_text, _usage = self._client.complete(
+                    prompt, model=self._opus, max_tokens=max_tokens, temperature=temperature
+                )
+                opus_confidence = self._scorer.score(prompt, opus_text)
+                return opus_text, "opus", opus_confidence
+
             return sonnet_text, "sonnet", sonnet_confidence
 
         # Low confidence — go straight to Opus
