@@ -87,6 +87,12 @@ src/momo_kibidango/
     └── mcp_server.py        # MCP protocol server for AI agents
 ```
 
+## Documentation
+
+- **[Cascade Algorithm](docs/CASCADE_ALGORITHM.md)**: A deep dive into the 3-tier routing and confidence scoring engine used for the Claude-based proxy.
+- **[Architecture Deep Dive](docs/ARCHITECTURE.md)**: Detailed breakdown of the speculative decoding components.
+- **[OpenClaw Integration](docs/OPENCLAW_INTEGRATION.md)**: How to integrate momo-kibidango with OpenClaw.
+
 ## Installation
 
 ```bash
